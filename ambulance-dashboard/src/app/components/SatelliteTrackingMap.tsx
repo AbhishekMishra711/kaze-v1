@@ -73,6 +73,21 @@ export default function SatelliteTrackingMap({
       if (mapInstanceRef.current) return;
 
       const L = (await import('leaflet')).default;
+      if (!isMounted || !mapContainerRef.current) return;
+
+      // Prevent "Map container is already initialized" error during Next.js StrictMode/Turbopack re-renders
+      const container = mapContainerRef.current as HTMLElement & { _leaflet_id?: number | null };
+      if (container._leaflet_id) {
+        if (mapInstanceRef.current) {
+          try {
+            mapInstanceRef.current.remove();
+          } catch (_) {}
+          mapInstanceRef.current = null;
+        }
+        container._leaflet_id = null;
+      }
+
+      if (mapInstanceRef.current) return;
 
       // Ensure leaflet styles exist
       if (!document.getElementById('leaflet-css')) {
@@ -195,8 +210,13 @@ export default function SatelliteTrackingMap({
     return () => {
       isMounted = false;
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.remove();
+        } catch (_) {}
         mapInstanceRef.current = null;
+      }
+      if (mapContainerRef.current) {
+        (mapContainerRef.current as HTMLElement & { _leaflet_id?: number | null })._leaflet_id = null;
       }
     };
   }, [destLat, destLng, startLat, startLng]);
