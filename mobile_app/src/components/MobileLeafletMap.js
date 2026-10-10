@@ -16,11 +16,13 @@ export function MobileLeafletMap({
   vehicleNumber = '108 Fleet Unit',
   etaMinutes = 5,
   distanceKm = 3.2,
+  isArrived = false,
 }) {
   const safeUserLat = Number(userLat) || 18.6253;
   const safeUserLng = Number(userLng) || 73.8166;
   const safeStartLat = Number(startLat) || 18.6480;
   const safeStartLng = Number(startLng) || 73.7920;
+  const arrivedFlag = Boolean(isArrived);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -132,8 +134,8 @@ export function MobileLeafletMap({
 </head>
 <body>
   <div class="hud-badge">
-    <div class="hud-dot"></div>
-    <span>ESRI OPTICAL SATELLITE RADAR</span>
+    <div class="hud-dot" style="${arrivedFlag ? 'background: #10b981; box-shadow: 0 0 10px #10b981;' : ''}"></div>
+    <span>${arrivedFlag ? '✓ AMBULANCE ARRIVED AT LOCATION' : 'ESRI OPTICAL SATELLITE RADAR'}</span>
   </div>
   <div id="map"></div>
 
@@ -142,6 +144,7 @@ export function MobileLeafletMap({
     var startLng = ${safeStartLng};
     var userLat = ${safeUserLat};
     var userLng = ${safeUserLng};
+    var isArrived = ${arrivedFlag};
 
     // Strict Pune Metro boundary box (No whole world zoom out)
     var puneBounds = L.latLngBounds(
@@ -192,23 +195,24 @@ export function MobileLeafletMap({
       waypoints.push([pLat, pLng]);
     }
 
-    // 5. Draw glowing transit polyline
+    // 5. Draw transit polyline
     L.polyline(waypoints, {
-      color: '#38bdf8',
+      color: isArrived ? '#10b981' : '#38bdf8',
       weight: 5,
       opacity: 0.85,
-      dashArray: '8, 8'
+      dashArray: isArrived ? undefined : '8, 8'
     }).addTo(map);
 
     // 6. Moving Ambulance Marker with 🚑 Emoji
     var ambIcon = L.divIcon({
       className: 'amb-marker',
-      html: '<div style="position:relative;"><div class="amb-radar-beacon"></div><div class="amb-bubble">🚑</div></div>',
+      html: '<div style="position:relative;"><div class="amb-radar-beacon" style="' + (isArrived ? 'background:rgba(16,185,129,0.45); border-color:#10b981;' : '') + '"></div><div class="amb-bubble" style="' + (isArrived ? 'border-color:#10b981;' : '') + '">🚑</div></div>',
       iconSize: [38, 38],
       iconAnchor: [19, 19]
     });
-    var ambMarker = L.marker(waypoints[0], { icon: ambIcon }).addTo(map)
-      .bindPopup("<b>Ambulance ${vehicleNumber}</b><br/>En Route (~${etaMinutes} mins)");
+    var initialPoint = isArrived ? waypoints[waypoints.length - 1] : waypoints[0];
+    var ambMarker = L.marker(initialPoint, { icon: ambIcon }).addTo(map)
+      .bindPopup(isArrived ? "<b>Ambulance ${vehicleNumber}</b><br/>✓ Arrived at Patient Location" : "<b>Ambulance ${vehicleNumber}</b><br/>En Route (~${etaMinutes} mins)");
 
     // Fit map bounds comfortably to show both ambulance and user
     map.fitBounds([
@@ -217,18 +221,20 @@ export function MobileLeafletMap({
     ], { padding: [50, 50] });
 
     // Continuous Swiggy-style ambulance movement loop
-    var progress = 0.12;
-    setInterval(function() {
-      progress += 0.022;
-      if (progress >= 0.98) {
-        progress = 0.98;
-      }
-      var idx = Math.min(waypoints.length - 1, Math.floor(progress * (waypoints.length - 1)));
-      var currentCoord = waypoints[idx];
-      if (currentCoord) {
-        ambMarker.setLatLng(currentCoord);
-      }
-    }, 1200);
+    if (!isArrived) {
+      var progress = 0.12;
+      setInterval(function() {
+        progress += 0.022;
+        if (progress >= 0.98) {
+          progress = 0.98;
+        }
+        var idx = Math.min(waypoints.length - 1, Math.floor(progress * (waypoints.length - 1)));
+        var currentCoord = waypoints[idx];
+        if (currentCoord) {
+          ambMarker.setLatLng(currentCoord);
+        }
+      }, 1200);
+    }
   </script>
 </body>
 </html>

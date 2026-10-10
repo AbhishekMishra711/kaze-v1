@@ -17,16 +17,17 @@ import { MobileLeafletMap } from '../components/MobileLeafletMap';
 
 // Ambulance status stages in order
 const STAGES = [
-  { key: 'submitted',   label: 'Request submitted',     detail: 'Your SOS has been sent to the emergency grid.' },
-  { key: 'ems',         label: 'EMS acknowledged',       detail: 'Emergency Medical Services have received and accepted the alert.' },
-  { key: 'hospital',    label: 'Hospital confirmed',     detail: 'Nearest available hospital has confirmed an ER bed.' },
-  { key: 'dispatched',  label: 'Ambulance dispatched',   detail: 'An ambulance is on its way to your location.' },
+  { key: 'submitted',   label: 'Request submitted',       detail: 'Your SOS has been sent to the emergency grid.' },
+  { key: 'ems',         label: 'EMS acknowledged',         detail: 'Emergency Medical Services have received and accepted the alert.' },
+  { key: 'hospital',    label: 'Hospital confirmed',       detail: 'Nearest available hospital has confirmed an ER bed.' },
+  { key: 'dispatched',  label: 'Ambulance dispatched',     detail: 'An ambulance is on its way to your location.' },
+  { key: 'arrived',     label: 'Patient arrived at ER',     detail: 'Patient safely received & admitted at the emergency bay.' },
 ];
 
-function StatusStep({ stage, index, currentIndex }) {
-  const done = index < currentIndex;
-  const active = index === currentIndex;
-  const pending = index > currentIndex;
+function StatusStep({ stage, index, currentIndex, isArrived }) {
+  const done = isArrived ? true : index < currentIndex;
+  const active = !isArrived && index === currentIndex;
+  const pending = !isArrived && index > currentIndex;
 
   return (
     <View style={styles.step}>
@@ -42,7 +43,7 @@ function StatusStep({ stage, index, currentIndex }) {
           {active && <View style={styles.innerDot} />}
         </View>
         {index < STAGES.length - 1 && (
-          <View style={[styles.connector, done && styles.connectorDone]} />
+          <View style={[styles.connector, (done || isArrived) && styles.connectorDone]} />
         )}
       </View>
 
@@ -50,13 +51,14 @@ function StatusStep({ stage, index, currentIndex }) {
       <View style={styles.stepContent}>
         <Text style={[
           styles.stepLabel,
+          done && styles.stepLabelDone,
           active && styles.stepLabelActive,
           pending && styles.stepLabelPending,
         ]}>
           {stage.label}
         </Text>
         {(done || active) && (
-          <Text style={styles.stepDetail}>{stage.detail}</Text>
+          <Text style={[styles.stepDetail, done && styles.stepDetailDone]}>{stage.detail}</Text>
         )}
       </View>
     </View>
@@ -86,6 +88,16 @@ export function TrackingScreen({
   onCancel,
 }) {
   const [stageIndex, setStageIndex] = useState(1);
+  const [simProgress, setSimProgress] = useState(0.12);
+
+  const rawStatus = (incident?.status || '').toUpperCase();
+  const resStatus = (incident?.reservationStatus || incident?.activeReservation?.status || '').toUpperCase();
+
+  const isArrivedFromStatus =
+    ['ARRIVED', 'HANDED_OVER', 'ADMITTED', 'COMPLETED', 'RESOLVED'].includes(rawStatus) ||
+    ['ARRIVED', 'HANDED_OVER', 'ADMITTED'].includes(resStatus);
+
+  const isArrived = stageIndex >= 4 || isArrivedFromStatus || simProgress >= 0.98;
 
   // Poll backend for updates if live
   useEffect(() => {
@@ -95,17 +107,27 @@ export function TrackingScreen({
         const res = await pollIncident(incident.id);
         if (res.success && res.incident) {
           onUpdateIncident?.(res.incident);
-          const st = res.incident.status?.toUpperCase();
-          if (st === 'ALLOCATING') {
-            setStageIndex(prev => Math.max(prev, 1));
-          } else if (st === 'ASSIGNED' || st === 'ALLOCATED') {
+          const st = (res.incident.status || '').toUpperCase();
+          const rSt = (res.incident.reservationStatus || res.incident.activeReservation?.status || '').toUpperCase();
+
+          if (
+            st === 'ARRIVED' || st === 'HANDED_OVER' || st === 'ADMITTED' || st === 'COMPLETED' || st === 'RESOLVED' ||
+            rSt === 'ARRIVED' || rSt === 'HANDED_OVER' || rSt === 'ADMITTED'
+          ) {
+            setStageIndex(4);
+            setSimProgress(1.0);
+            setSimDistanceKm(0);
+            setSimEtaMinutes(0);
+          } else if (st === 'DISPATCHED' || st === 'EN_ROUTE' || rSt === 'CONFIRMED') {
+            setStageIndex(prev => Math.max(prev, 3));
+          } else if (st === 'ASSIGNED' || st === 'ALLOCATED' || rSt === 'HELD') {
             setStageIndex(prev => Math.max(prev, 2));
-          } else if (st === 'DISPATCHED' || st === 'EN_ROUTE') {
-            setStageIndex(3);
+          } else if (st === 'ALLOCATING') {
+            setStageIndex(prev => Math.max(prev, 1));
           }
         }
       } catch (_) {}
-    }, 5000);
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [incident?.id]);
@@ -114,8 +136,8 @@ export function TrackingScreen({
   useEffect(() => {
     if (!incident) return;
     const timers = [
-      setTimeout(() => setStageIndex(prev => Math.max(prev, 2)), 6000),
-      setTimeout(() => setStageIndex(3), 14000),
+      setTimeout(() => setStageIndex(prev => Math.max(prev, 2)), 5000),
+      setTimeout(() => setStageIndex(prev => Math.max(prev, 3)), 12000),
     ];
     return () => timers.forEach(clearTimeout);
   }, [incident]);
@@ -130,21 +152,30 @@ export function TrackingScreen({
 
   const totalDistanceKm = calculateHaversineKm(startAmbLat, startAmbLng, userLat, userLng);
 
-  // Swiggy / Blinkit dynamic movement simulation
-  const [simProgress, setSimProgress] = useState(0.12);
   const [simEtaMinutes, setSimEtaMinutes] = useState(Math.max(1, Math.round((totalDistanceKm / 36) * 60)));
   const [simDistanceKm, setSimDistanceKm] = useState(totalDistanceKm);
 
   // Moving coordinates calculated along path
-  const currentAmbLat = startAmbLat + (userLat - startAmbLat) * simProgress + Math.sin(simProgress * Math.PI) * 0.0035;
-  const currentAmbLng = startAmbLng + (userLng - startAmbLng) * simProgress - Math.sin(simProgress * Math.PI) * 0.002;
+  const currentAmbLat = isArrived ? userLat : startAmbLat + (userLat - startAmbLat) * simProgress + Math.sin(simProgress * Math.PI) * 0.0035;
+  const currentAmbLng = isArrived ? userLng : startAmbLng + (userLng - startAmbLng) * simProgress - Math.sin(simProgress * Math.PI) * 0.002;
 
   // Continuous movement simulation loop with accurate real-time telemetry
   useEffect(() => {
+    if (isArrived) {
+      setSimProgress(1.0);
+      setSimDistanceKm(0);
+      setSimEtaMinutes(0);
+      return;
+    }
     const interval = setInterval(() => {
       setSimProgress((prev) => {
         const next = prev + 0.022;
-        if (next >= 0.98) return 0.98;
+        if (next >= 0.98) {
+          setStageIndex(4);
+          setSimDistanceKm(0);
+          setSimEtaMinutes(0);
+          return 1.0;
+        }
         const curAmbLat = startAmbLat + (userLat - startAmbLat) * next;
         const curAmbLng = startAmbLng + (userLng - startAmbLng) * next;
         const remainingKm = Math.max(0.1, calculateHaversineKm(curAmbLat, curAmbLng, userLat, userLng));
@@ -154,7 +185,7 @@ export function TrackingScreen({
       });
     }, 1200);
     return () => clearInterval(interval);
-  }, [startAmbLat, startAmbLng, userLat, userLng]);
+  }, [isArrived, startAmbLat, startAmbLng, userLat, userLng]);
 
 
 
@@ -189,10 +220,10 @@ export function TrackingScreen({
           <Text style={styles.backText}>Home</Text>
         </TouchableOpacity>
 
-        <View style={styles.navStatusPill}>
-          <View style={styles.pulseDot} />
-          <Text style={styles.navStatusText}>
-            {incident?.status || 'ALLOCATING'}
+        <View style={[styles.navStatusPill, isArrived && styles.navStatusPillArrived]}>
+          <View style={[styles.pulseDot, isArrived && styles.pulseDotArrived]} />
+          <Text style={[styles.navStatusText, isArrived && styles.navStatusTextArrived]}>
+            {isArrived ? 'ARRIVED & ADMITTED' : (incident?.status || 'ALLOCATING')}
           </Text>
         </View>
       </View>
@@ -248,7 +279,14 @@ export function TrackingScreen({
 
         {/* Status Timeline */}
         <View style={styles.timelineCard}>
-          <Text style={styles.sectionTitle}>Dispatch Timeline</Text>
+          <View style={styles.timelineHeaderRow}>
+            <Text style={styles.sectionTitle}>Dispatch Timeline</Text>
+            {isArrived && (
+              <View style={styles.timelineDoneBadge}>
+                <Text style={styles.timelineDoneBadgeText}>✓ COMPLETE</Text>
+              </View>
+            )}
+          </View>
           <View style={styles.timeline}>
             {STAGES.map((stage, i) => (
               <StatusStep
@@ -256,6 +294,7 @@ export function TrackingScreen({
                 stage={stage}
                 index={i}
                 currentIndex={stageIndex}
+                isArrived={isArrived}
               />
             ))}
           </View>
@@ -298,9 +337,9 @@ export function TrackingScreen({
                   Optical Satellite View (Google Earth / Esri Optics) • Pune Metro Bounds
                 </Text>
               </View>
-              <View style={styles.radarPill}>
-                <View style={styles.radarPillDot} />
-                <Text style={styles.radarPillText}>RADAR LIVE</Text>
+              <View style={[styles.radarPill, isArrived && { backgroundColor: '#059669' }]}>
+                <View style={[styles.radarPillDot, isArrived && { backgroundColor: '#34d399' }]} />
+                <Text style={styles.radarPillText}>{isArrived ? 'ARRIVED' : 'RADAR LIVE'}</Text>
               </View>
             </View>
 
@@ -310,29 +349,34 @@ export function TrackingScreen({
               startLat={startAmbLat}
               startLng={startAmbLng}
               vehicleNumber={incident?.ambulanceNumber || '108 Fleet Unit'}
-              etaMinutes={simEtaMinutes}
-              distanceKm={simDistanceKm}
+              etaMinutes={isArrived ? 0 : simEtaMinutes}
+              distanceKm={isArrived ? 0 : simDistanceKm}
+              isArrived={isArrived}
             />
 
             {/* Swiggy / Blinkit Style Live Transit Card */}
-            <View style={styles.swiggyStatusCard}>
+            <View style={[styles.swiggyStatusCard, isArrived && styles.swiggyStatusCardArrived]}>
               <View style={styles.swiggyTopRow}>
-                <View style={styles.swiggyAmbIconBox}>
-                  <Text style={{ fontSize: 22 }}>🚑</Text>
+                <View style={[styles.swiggyAmbIconBox, isArrived && styles.swiggyAmbIconBoxArrived]}>
+                  <Text style={{ fontSize: 22 }}>{isArrived ? '🏥' : '🚑'}</Text>
                 </View>
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={styles.swiggyAmbTitle}>
                     {incident?.ambulanceNumber || '108 Fleet Unit'}
                   </Text>
-                  <Text style={styles.swiggyAmbSub}>
-                    {simProgress >= 0.95 ? 'Arriving at your location' : 'En route to your location'}
+                  <Text style={[styles.swiggyAmbSub, isArrived && styles.swiggyAmbSubArrived]}>
+                    {isArrived
+                      ? '✓ Patient safely arrived & admitted at ER'
+                      : (simProgress >= 0.95 ? 'Arriving at your location' : 'En route to your location')}
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.swiggyEtaVal}>
-                    {simProgress >= 0.95 ? 'Arrived' : `~${simEtaMinutes} min`}
+                  <Text style={[styles.swiggyEtaVal, isArrived && styles.swiggyEtaValArrived]}>
+                    {isArrived ? 'Arrived' : `~${simEtaMinutes} min`}
                   </Text>
-                  <Text style={styles.swiggyDistVal}>{simDistanceKm} km left</Text>
+                  <Text style={styles.swiggyDistVal}>
+                    {isArrived ? 'At Destination' : `${simDistanceKm} km left`}
+                  </Text>
                 </View>
               </View>
 
@@ -341,15 +385,29 @@ export function TrackingScreen({
                 <View
                   style={[
                     styles.swiggyProgressBar,
-                    { width: `${Math.round(simProgress * 100)}%` },
+                    isArrived && styles.swiggyProgressBarArrived,
+                    { width: isArrived ? '100%' : `${Math.round(simProgress * 100)}%` },
                   ]}
                 />
               </View>
               <View style={styles.swiggyProgressLabels}>
                 <Text style={styles.swiggyStepText}>Base</Text>
-                <Text style={styles.swiggyStepTextMid}>Speed: 42 km/h</Text>
-                <Text style={styles.swiggyStepText}>You</Text>
+                <Text style={styles.swiggyStepTextMid}>
+                  {isArrived ? 'Status: Handover Complete' : 'Speed: 42 km/h'}
+                </Text>
+                <Text style={[styles.swiggyStepText, isArrived && { fontWeight: '700', color: theme.colors.greenDark }]}>
+                  {isArrived ? '✓ Hospital ER' : 'You'}
+                </Text>
               </View>
+
+              {/* Handover Notice Banner */}
+              {isArrived && (
+                <View style={styles.arrivalHandoverNotice}>
+                  <Text style={styles.arrivalHandoverText}>
+                    ✓ Hospital confirmed patient arrival & emergency bay admission.
+                  </Text>
+                </View>
+              )}
 
               {incident?.driverPhone && (
                 <View style={styles.driverCallRow}>
@@ -638,6 +696,10 @@ const styles = StyleSheet.create({
     color: theme.colors.red,
     fontWeight: '700',
   },
+  stepLabelDone: {
+    color: '#15803D',
+    fontWeight: '700',
+  },
   stepLabelPending: {
     color: theme.colors.textMuted,
     fontWeight: '400',
@@ -646,6 +708,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.textSecondary,
     lineHeight: 16,
+  },
+  stepDetailDone: {
+    color: '#166534',
   },
 
   // Info Card
@@ -889,5 +954,69 @@ const styles = StyleSheet.create({
     color: theme.colors.red,
     fontSize: 13,
     fontWeight: '600',
+  },
+
+  // Arrival State Styles
+  timelineHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  timelineDoneBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  timelineDoneBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#166534',
+    letterSpacing: 0.5,
+  },
+  navStatusPillArrived: {
+    backgroundColor: '#DCFCE7',
+    borderColor: '#86EFAC',
+  },
+  pulseDotArrived: {
+    backgroundColor: '#16a34a',
+  },
+  navStatusTextArrived: {
+    color: '#15803D',
+  },
+  swiggyStatusCardArrived: {
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  swiggyAmbIconBoxArrived: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    borderColor: '#10b981',
+  },
+  swiggyAmbSubArrived: {
+    color: '#4ade80',
+    fontWeight: '700',
+  },
+  swiggyEtaValArrived: {
+    color: '#4ade80',
+  },
+  swiggyProgressBarArrived: {
+    backgroundColor: '#10b981',
+  },
+  arrivalHandoverNotice: {
+    marginTop: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+  },
+  arrivalHandoverText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4ade80',
+    textAlign: 'center',
   },
 });

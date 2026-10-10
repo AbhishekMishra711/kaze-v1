@@ -133,7 +133,11 @@ export async function pollIncident(id) {
 
     if (res.ok) {
       const json = await res.json();
-      const raw = json.incident ?? json.data ?? json;
+      const incidentData = json.incident ?? json.data ?? json;
+      const raw = {
+        ...incidentData,
+        activeReservation: json.activeReservation ?? incidentData.activeReservation,
+      };
       return { success: true, incident: parseIncident(raw) };
     }
   } catch (_) {
@@ -147,6 +151,18 @@ export async function pollIncident(id) {
 export function parseIncident(raw) {
   if (!raw) return null;
 
+  const resStatus = raw.activeReservation?.status?.toUpperCase();
+  const rawStatus = (raw.status || '').toUpperCase();
+  let computedStatus = raw.status ?? 'ALLOCATING';
+
+  if (resStatus === 'HANDED_OVER' || rawStatus === 'HANDED_OVER') {
+    computedStatus = 'HANDED_OVER';
+  } else if (resStatus === 'ARRIVED' || rawStatus === 'ARRIVED') {
+    computedStatus = 'ARRIVED';
+  } else if (resStatus === 'CONFIRMED' && (rawStatus === 'ALLOCATING' || rawStatus === 'ASSIGNED')) {
+    computedStatus = 'CONFIRMED';
+  }
+
   return {
     id: raw.id ?? raw._id ?? 'c3cf8206-ea5c-48b9-bc51-715f15659d1c',
     callerId: raw.caller_id ?? raw.callerId ?? null,
@@ -157,7 +173,8 @@ export function parseIncident(raw) {
     description: raw.description_raw ?? raw.description ?? '',
     audioUrl: raw.audio_url ?? null,
     triageLevel: raw.triage_level ?? raw.triageLevel ?? 'EMERGENT',
-    status: raw.status ?? 'ALLOCATING',
+    status: computedStatus,
+    reservationStatus: resStatus || null,
     unservedReason: raw.unserved_reason ?? null,
     createdAt: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
     updatedAt: raw.updated_at ?? raw.updatedAt ?? new Date().toISOString(),
