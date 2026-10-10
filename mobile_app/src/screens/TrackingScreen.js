@@ -10,13 +10,10 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker } from 'react-native-maps';
 import { theme } from '../styles/theme';
 import { pollIncident } from '../api/api';
+import { MobileLeafletMap } from '../components/MobileLeafletMap';
 
-// Safe check for map components
-const SafeMap = MapView || null;
-const SafeMarker = Marker || (MapView && MapView.Marker) || null;
 
 // Ambulance status stages in order
 const STAGES = [
@@ -66,6 +63,21 @@ function StatusStep({ stage, index, currentIndex }) {
   );
 }
 
+// Accurate Haversine Distance Calculation (in km)
+function calculateHaversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number((R * c).toFixed(1));
+}
+
 export function TrackingScreen({
   incident,
   location,
@@ -110,35 +122,39 @@ export function TrackingScreen({
 
   const dispatched = stageIndex >= 3;
 
-  // Swiggy / Blinkit dynamic movement simulation
-  const [simProgress, setSimProgress] = useState(0.18);
-  const [simEtaMinutes, setSimEtaMinutes] = useState(6);
-  const [simDistanceKm, setSimDistanceKm] = useState(3.4);
-
   // User and initial ambulance coordinates
-  const userLat = location?.latitude ?? incident?.latitude ?? 18.6253;
-  const userLng = location?.longitude ?? incident?.longitude ?? 73.8166;
-  const startAmbLat = incident?.ambulanceLat ?? (userLat + 0.022);
-  const startAmbLng = incident?.ambulanceLng ?? (userLng - 0.024);
+  const userLat = Number(location?.latitude ?? incident?.latitude ?? 18.6253);
+  const userLng = Number(location?.longitude ?? incident?.longitude ?? 73.8166);
+  const startAmbLat = Number(incident?.ambulanceLat ?? (userLat + 0.024));
+  const startAmbLng = Number(incident?.ambulanceLng ?? (userLng - 0.026));
+
+  const totalDistanceKm = calculateHaversineKm(startAmbLat, startAmbLng, userLat, userLng);
+
+  // Swiggy / Blinkit dynamic movement simulation
+  const [simProgress, setSimProgress] = useState(0.12);
+  const [simEtaMinutes, setSimEtaMinutes] = useState(Math.max(1, Math.round((totalDistanceKm / 36) * 60)));
+  const [simDistanceKm, setSimDistanceKm] = useState(totalDistanceKm);
 
   // Moving coordinates calculated along path
-  const currentAmbLat = startAmbLat + (userLat - startAmbLat) * simProgress + Math.sin(simProgress * Math.PI) * 0.003;
+  const currentAmbLat = startAmbLat + (userLat - startAmbLat) * simProgress + Math.sin(simProgress * Math.PI) * 0.0035;
   const currentAmbLng = startAmbLng + (userLng - startAmbLng) * simProgress - Math.sin(simProgress * Math.PI) * 0.002;
 
-  // Continuous movement simulation loop
+  // Continuous movement simulation loop with accurate real-time telemetry
   useEffect(() => {
     const interval = setInterval(() => {
       setSimProgress((prev) => {
-        const next = prev + 0.025;
+        const next = prev + 0.022;
         if (next >= 0.98) return 0.98;
-        const rem = 1 - next;
-        setSimEtaMinutes(Math.max(1, Math.round(rem * 7)));
-        setSimDistanceKm(Number((rem * 3.8).toFixed(1)));
+        const curAmbLat = startAmbLat + (userLat - startAmbLat) * next;
+        const curAmbLng = startAmbLng + (userLng - startAmbLng) * next;
+        const remainingKm = Math.max(0.1, calculateHaversineKm(curAmbLat, curAmbLng, userLat, userLng));
+        setSimDistanceKm(remainingKm);
+        setSimEtaMinutes(Math.max(1, Math.round((remainingKm / 38) * 60)));
         return next;
       });
-    }, 1300);
+    }, 1200);
     return () => clearInterval(interval);
-  }, []);
+  }, [startAmbLat, startAmbLng, userLat, userLng]);
 
 
 
@@ -157,7 +173,6 @@ export function TrackingScreen({
     );
   };
 
-  const hasMapComponent = Boolean(SafeMap && SafeMarker);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -289,57 +304,15 @@ export function TrackingScreen({
               </View>
             </View>
 
-            {hasMapComponent ? (
-              <View style={styles.mapContainer}>
-                <SafeMap
-                  style={StyleSheet.absoluteFill}
-                  mapType="hybrid"
-                  minZoomLevel={12}
-                  maxZoomLevel={18}
-                  initialRegion={{
-                    latitude: (currentAmbLat + userLat) / 2,
-                    longitude: (currentAmbLng + userLng) / 2,
-                    latitudeDelta: 0.035,
-                    longitudeDelta: 0.035,
-                  }}
-                  scrollEnabled
-                  zoomEnabled
-                >
-                  {/* Moving Ambulance Marker with 🚑 Emoji */}
-                  <SafeMarker
-                    coordinate={{ latitude: currentAmbLat, longitude: currentAmbLng }}
-                    title="108 Emergency Ambulance"
-                    description={`En Route (ETA ~${simEtaMinutes}m)`}
-                  >
-                    <View style={styles.ambMarkerPin}>
-                      <View style={styles.ambPulseRing} />
-                      <Text style={styles.ambEmojiText}>🚑</Text>
-                    </View>
-                  </SafeMarker>
-
-                  {/* Citizen SOS Marker */}
-                  <SafeMarker
-                    coordinate={{ latitude: userLat, longitude: userLng }}
-                    title="You (Patient SOS Location)"
-                    description={incident?.addressText || 'Emergency location'}
-                  >
-                    <View style={styles.userMarkerPin}>
-                      <Text style={styles.userEmojiText}>🆘</Text>
-                    </View>
-                  </SafeMarker>
-                </SafeMap>
-              </View>
-            ) : (
-              <View style={[styles.mapContainer, styles.mapFallback]}>
-                <Text style={styles.ambEmojiText}>🚑</Text>
-                <Text style={styles.mapFallbackText}>
-                  Ambulance En Route: Lat {currentAmbLat.toFixed(4)}, Lng {currentAmbLng.toFixed(4)}
-                </Text>
-                <Text style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
-                  ETA ~{simEtaMinutes} mins • {simDistanceKm} km remaining
-                </Text>
-              </View>
-            )}
+            <MobileLeafletMap
+              userLat={userLat}
+              userLng={userLng}
+              startLat={startAmbLat}
+              startLng={startAmbLng}
+              vehicleNumber={incident?.ambulanceNumber || '108 Fleet Unit'}
+              etaMinutes={simEtaMinutes}
+              distanceKm={simDistanceKm}
+            />
 
             {/* Swiggy / Blinkit Style Live Transit Card */}
             <View style={styles.swiggyStatusCard}>
