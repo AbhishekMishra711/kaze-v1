@@ -140,80 +140,7 @@ export function TrackingScreen({
     return () => clearInterval(interval);
   }, []);
 
-  // HTML content for Leaflet optical satellite imagery on Web
-  const leafletHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #0f172a; }
-    #map { height: 100%; width: 100%; }
-    @keyframes radarPulse {
-      0% { transform: scale(0.9); opacity: 0.9; }
-      100% { transform: scale(2.2); opacity: 0; }
-    }
-    .amb-pulse {
-      position: absolute; width: 34px; height: 34px; border-radius: 50%;
-      background: rgba(59, 130, 246, 0.5); animation: radarPulse 1.3s infinite;
-      top: -5px; left: -5px;
-    }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script>
-    var startLat = ${startAmbLat};
-    var startLng = ${startAmbLng};
-    var destLat = ${userLat};
-    var destLng = ${userLng};
-    var puneBounds = L.latLngBounds(L.latLng(18.35, 73.65), L.latLng(18.82, 74.15));
-    var map = L.map('map', {
-      center: [(startLat + destLat)/2, (startLng + destLng)/2],
-      zoom: 14,
-      minZoom: 12,
-      maxZoom: 18,
-      maxBounds: puneBounds,
-      maxBoundsViscosity: 1.0,
-      zoomControl: false
-    });
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 18
-    }).addTo(map);
-    L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 18, opacity: 0.8
-    }).addTo(map);
 
-    var patientIcon = L.divIcon({
-      html: '<div style="font-size:24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));">🆘</div>',
-      iconSize: [28, 28], iconAnchor: [14, 14]
-    });
-    L.marker([destLat, destLng], { icon: patientIcon }).addTo(map);
-
-    var ambIcon = L.divIcon({
-      html: '<div style="position:relative;"><div class="amb-pulse"></div><div style="font-size:28px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7)); transform: scale(1.1);">🚑</div></div>',
-      iconSize: [32, 32], iconAnchor: [16, 16]
-    });
-    var ambMarker = L.marker([startLat, startLng], { icon: ambIcon }).addTo(map);
-
-    L.polyline([[startLat, startLng], [destLat, destLng]], {
-      color: '#38bdf8', weight: 4, opacity: 0.8, dashArray: '6, 6'
-    }).addTo(map);
-
-    var progress = 0.15;
-    setInterval(function() {
-      progress += 0.025;
-      if (progress > 0.96) progress = 0.96;
-      var curLat = startLat + (destLat - startLat) * progress + Math.sin(progress * Math.PI) * 0.003;
-      var curLng = startLng + (destLng - startLng) * progress - Math.sin(progress * Math.PI) * 0.002;
-      ambMarker.setLatLng([curLat, curLng]);
-    }, 1300);
-  </script>
-</body>
-</html>
-  `;
 
   const handleCancelPress = () => {
     Alert.alert(
@@ -350,32 +277,19 @@ export function TrackingScreen({
         {Boolean(incident) && (
           <View style={styles.mapCard}>
             <View style={styles.mapHeaderRow}>
-              <div>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.sectionTitle}>Live Ambulance Radar</Text>
                 <Text style={styles.mapNote}>
                   Optical Satellite View (Google Earth / Esri Optics) • Pune Metro Bounds
                 </Text>
-              </div>
+              </View>
               <View style={styles.radarPill}>
                 <View style={styles.radarPillDot} />
                 <Text style={styles.radarPillText}>RADAR LIVE</Text>
               </View>
             </View>
 
-            {Platform.OS === 'web' ? (
-              <View style={styles.mapContainer}>
-                <iframe
-                  title="Satellite Map"
-                  srcDoc={leafletHtml}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    border: 'none',
-                    borderRadius: 12,
-                  }}
-                />
-              </View>
-            ) : hasMapComponent ? (
+            {hasMapComponent ? (
               <View style={styles.mapContainer}>
                 <SafeMap
                   style={StyleSheet.absoluteFill}
