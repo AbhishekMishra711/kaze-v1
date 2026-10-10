@@ -7,6 +7,7 @@ import {
   ScrollView,
   Linking,
   Platform,
+  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { theme } from '../styles/theme';
@@ -58,7 +59,7 @@ export const IncidentTracker = ({ incident, onReset, isLiveBackend }) => {
     if (Platform.OS !== 'web') {
       Linking.openURL(phoneUrl).catch(() => {});
     } else {
-      alert(`Initiating emergency call to ${number}`);
+      Alert.alert('Emergency Call', `Initiating emergency call to ${number}`);
     }
   };
 

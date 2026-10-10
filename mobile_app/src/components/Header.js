@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking, Alert } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { theme } from '../styles/theme';
 
@@ -9,7 +9,7 @@ export const Header = ({ isLiveBackend, onOpenSettings }) => {
     if (Platform.OS !== 'web') {
       Linking.openURL(url).catch(() => {});
     } else {
-      alert('Speed dial: Emergency 112 (National Emergency Number)');
+      Alert.alert('Emergency Dial', 'Speed dial: Emergency 112 (National Emergency Number)');
     }
   };
 

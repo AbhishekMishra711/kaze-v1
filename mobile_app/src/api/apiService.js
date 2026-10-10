@@ -112,7 +112,7 @@ export const fetchIncidentStatus = async (id) => {
  * Ping backend health
  */
 export const checkBackendHealth = async (customUrl) => {
-  const target = (customUrl || activeBaseUrl).trim().replace(/\/+$/, '');
+  const target = (customUrl || getApiBaseUrl()).trim().replace(/\/+$/, '');
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
