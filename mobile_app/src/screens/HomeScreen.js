@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,13 @@ import {
   ScrollView,
   Animated,
   Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SOSButton } from '../components/SOSButton';
 import { theme } from '../styles/theme';
+import { getApiBaseUrl, setApiBaseUrl, getCandidateUrls } from '../api/api';
 
 export function HomeScreen({
   onActivate,
@@ -21,6 +24,60 @@ export function HomeScreen({
   onCancelIncident,
 }) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [currentUrl, setCurrentUrl] = useState(getApiBaseUrl());
+  const [serverModalVisible, setServerModalVisible] = useState(false);
+  const [customIpInput, setCustomIpInput] = useState('');
+  const [serverStatus, setServerStatus] = useState('Online');
+
+  useEffect(() => {
+    // Check backend connection on mount
+    const checkServer = async () => {
+      try {
+        const url = getApiBaseUrl();
+        setCurrentUrl(url);
+        const res = await fetch(`${url}/health`, { method: 'GET' });
+        if (res.ok) {
+          setServerStatus('Online');
+        } else {
+          setServerStatus('Checking');
+        }
+      } catch (_) {
+        setServerStatus('Offline');
+      }
+    };
+    checkServer();
+  }, []);
+
+  const handleSelectServer = async (url) => {
+    await setApiBaseUrl(url);
+    setCurrentUrl(url);
+    setServerModalVisible(false);
+    try {
+      const res = await fetch(`${url}/health`);
+      if (res.ok) {
+        setServerStatus('Online');
+        Alert.alert('Connected', `Successfully connected to backend:\n${url}`);
+      } else {
+        setServerStatus('Warning');
+        Alert.alert('Connected with Warning', `Backend returned HTTP ${res.status}`);
+      }
+    } catch (err) {
+      setServerStatus('Offline');
+      Alert.alert('Connection Failed', `Cannot reach ${url}:\n${err.message}`);
+    }
+  };
+
+  const handleCustomIpSubmit = () => {
+    if (!customIpInput.trim()) return;
+    let formatted = customIpInput.trim();
+    if (!formatted.startsWith('http://') && !formatted.startsWith('https://')) {
+      formatted = `http://${formatted}`;
+    }
+    if (!formatted.includes(':') || formatted.split(':').length === 2) {
+      formatted = `${formatted}:4000`;
+    }
+    handleSelectServer(formatted);
+  };
 
   useEffect(() => {
     if (!activeIncident) return;
@@ -56,10 +113,36 @@ export function HomeScreen({
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top Header */}
-        <View style={styles.header}>
-          <Text style={styles.appName}>Kaze</Text>
-          <Text style={styles.tagline}>Emergency Response</Text>
+        {/* Top Header with Server Connection Pill */}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.appName}>Kaze</Text>
+            <Text style={styles.tagline}>Emergency Response</Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setServerModalVisible(true)}
+            style={[
+              styles.serverPill,
+              serverStatus === 'Online'
+                ? styles.serverPillOnline
+                : styles.serverPillOffline,
+            ]}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.serverDot,
+                serverStatus === 'Online'
+                  ? { backgroundColor: '#16a34a' }
+                  : { backgroundColor: '#dc2626' },
+              ]}
+            />
+            <Text style={styles.serverPillText} numberOfLines={1}>
+              {currentUrl.replace('http://', '').replace(':4000', '')}
+            </Text>
+            <Text style={{ fontSize: 10, color: '#64748b' }}>⚙️</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Active Incident Card (Visible when user has an ongoing request) */}
@@ -176,6 +259,75 @@ export function HomeScreen({
           </Text>
         </View>
       </ScrollView>
+
+      {/* Backend Server Selection Modal */}
+      <Modal
+        visible={serverModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setServerModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Backend Connection</Text>
+              <TouchableOpacity onPress={() => setServerModalVisible(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Select or enter your PC backend address so SOS alerts reach the Ambulance Console:
+            </Text>
+
+            {/* Presets */}
+            <View style={{ gap: 8, marginVertical: 12 }}>
+              {[
+                { label: 'Campus Wi-Fi (Primary)', url: 'http://10.10.0.229:4000' },
+                { label: 'Mobile Hotspot', url: 'http://192.168.137.1:4000' },
+                { label: 'Localhost (Web / Emulator)', url: 'http://localhost:4000' },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.url}
+                  onPress={() => handleSelectServer(item.url)}
+                  style={[
+                    styles.serverOption,
+                    currentUrl === item.url && styles.serverOptionActive,
+                  ]}
+                >
+                  <View>
+                    <Text style={[styles.serverOptLabel, currentUrl === item.url && { color: '#166534', fontWeight: '700' }]}>
+                      {item.label}
+                    </Text>
+                    <Text style={styles.serverOptUrl}>{item.url}</Text>
+                  </View>
+                  {currentUrl === item.url && (
+                    <Text style={{ color: '#16a34a', fontWeight: '800' }}>✓ Active</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Custom Input */}
+            <View style={styles.customInputRow}>
+              <TextInput
+                placeholder="Custom IP (e.g. 192.168.1.50)"
+                value={customIpInput}
+                onChangeText={setCustomIpInput}
+                style={styles.customIpInput}
+                placeholderTextColor="#94a3b8"
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={handleCustomIpSubmit}
+                style={styles.customConnectBtn}
+              >
+                <Text style={styles.customConnectText}>Connect</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -190,9 +342,135 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 28,
   },
-  header: {
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 16,
     paddingBottom: 12,
+  },
+  serverPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  serverPillOnline: {
+    backgroundColor: '#f0fdf4',
+    borderColor: '#bbf7d0',
+  },
+  serverPillOffline: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
+  },
+  serverDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  serverPillText: {
+    fontSize: 11,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontWeight: '600',
+    color: '#334155',
+    maxWidth: 110,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 380,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  modalClose: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#64748b',
+    padding: 4,
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    lineHeight: 16,
+  },
+  serverOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#f8fafc',
+  },
+  serverOptionActive: {
+    borderColor: '#86efac',
+    backgroundColor: '#f0fdf4',
+  },
+  serverOptLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  serverOptUrl: {
+    fontSize: 11,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    color: '#64748b',
+    marginTop: 2,
+  },
+  customInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+  },
+  customIpInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    color: '#0f172a',
+  },
+  customConnectBtn: {
+    backgroundColor: '#0284c7',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  customConnectText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   appName: {
     fontSize: 26,

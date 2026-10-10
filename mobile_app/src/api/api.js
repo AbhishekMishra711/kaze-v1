@@ -1,72 +1,116 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Kaze Emergency API Service
-// ─────────────────────────────────────────────────────────────────────────────
+import { Platform, NativeModules } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Change this to your backend host/port when you deploy or test.
-// (e.g. 'http://localhost:3000', 'http://10.0.2.2:3000' for Android emulator, or your real domain)
-export const API_BASE_URL = 'http://localhost:4000';
+// Known host IPs for local Wi-Fi and Mobile Hotspot
+const KNOWN_CANDIDATES = [
+  'http://10.10.0.229:4000',
+  'http://192.168.137.1:4000',
+  'http://localhost:4000',
+];
 
+export const BACKEND_STORAGE_KEY = '@kaze_backend_url';
+
+// Auto-detect host IP from Expo bundler scriptURL if running on native device
+function detectInitialHost() {
+  if (Platform.OS === 'web') {
+    return 'http://localhost:4000';
+  }
+  try {
+    const scriptURL = NativeModules?.SourceCode?.scriptURL;
+    if (scriptURL) {
+      const match = scriptURL.match(/https?:\/\/([^/:]+)/);
+      if (match && match[1] && match[1] !== 'localhost' && match[1] !== '127.0.0.1') {
+        return `http://${match[1]}:4000`;
+      }
+    }
+  } catch (_) {}
+  // Default to primary WiFi IP
+  return 'http://10.10.0.229:4000';
+}
+
+export const API_BASE_URL = detectInitialHost();
 let currentBaseUrl = API_BASE_URL;
 
-export const setApiBaseUrl = (url) => {
-  if (url) currentBaseUrl = url.trim().replace(/\/+$/, '');
+// Load persisted URL on startup
+AsyncStorage.getItem(BACKEND_STORAGE_KEY)
+  .then((saved) => {
+    if (saved && saved.trim()) {
+      currentBaseUrl = saved.trim().replace(/\/+$/, '');
+    }
+  })
+  .catch(() => {});
+
+export const setApiBaseUrl = async (url) => {
+  if (url) {
+    currentBaseUrl = url.trim().replace(/\/+$/, '');
+    try {
+      await AsyncStorage.setItem(BACKEND_STORAGE_KEY, currentBaseUrl);
+    } catch (_) {}
+  }
 };
 
 export const getApiBaseUrl = () => currentBaseUrl;
+export const getCandidateUrls = () => [currentBaseUrl, ...KNOWN_CANDIDATES.filter(u => u !== currentBaseUrl)];
 
 /**
  * POST /api/v1/incidents/sos
- * Input format:
- * {
- *   "description": "...",
- *   "latitude": 18.6253,
- *   "longitude": 73.8166
- * }
  */
 export async function submitSOS({ description, latitude, longitude }) {
-  const url = `${getApiBaseUrl()}/api/v1/incidents/sos`;
-
   const body = {
     description: description || '',
     latitude: typeof latitude === 'number' ? latitude : 18.6253,
     longitude: typeof longitude === 'number' ? longitude : 73.8166,
   };
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+  const candidateUrls = getCandidateUrls();
+  let lastError = null;
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+  for (const baseUrl of candidateUrls) {
+    const url = `${baseUrl}/api/v1/incidents/sos`;
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
 
-    clearTimeout(timeout);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
 
-    const json = await res.json();
+      clearTimeout(timeout);
 
-    if (json.success && json.incident) {
-      return {
-        success: true,
-        live: true,
-        incident: parseIncident(json.incident),
-      };
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.incident) {
+          // If this candidate succeeded and differed from current, update active
+          if (baseUrl !== currentBaseUrl) {
+            setApiBaseUrl(baseUrl);
+          }
+          return {
+            success: true,
+            live: true,
+            incident: parseIncident(json.incident),
+          };
+        }
+      }
+    } catch (err) {
+      lastError = err;
+      console.log(`[SOS API] Attempt to ${baseUrl} failed:`, err.message);
     }
-    throw new Error(`Server responded with status: ${res.status}`);
-  } catch (err) {
-    console.log('[SOS API] Live backend unreachable, falling back to verified demo incident:', err.message);
-    const demo = demoIncident(description, latitude, longitude);
-    return {
-      success: true,
-      live: false,
-      incident: parseIncident(demo),
-    };
   }
+
+  // If all live candidates failed, inform and fallback gracefully
+  console.warn('[SOS API] All live endpoints failed. Error:', lastError?.message);
+  const demo = demoIncident(description, latitude, longitude);
+  return {
+    success: true,
+    live: false,
+    incident: parseIncident(demo),
+  };
 }
 
 /**
@@ -125,8 +169,8 @@ export function parseIncident(raw) {
     driverName: raw.activeReservation?.driver_name ?? raw.driverName ?? null,
     driverPhone: raw.activeReservation?.driver_phone ?? raw.driverPhone ?? null,
     ambulanceEtaMinutes: raw.ambulanceEtaMinutes ?? raw.eta ?? 6,
-    ambulanceLat: typeof raw.ambulanceLat === 'number' ? raw.ambulanceLat : null,
-    ambulanceLng: typeof raw.ambulanceLng === 'number' ? raw.ambulanceLng : null,
+    ambulanceLat: typeof raw.ambulanceLat === 'number' ? raw.ambulanceLat : (raw.activeReservation?.ambulance_lat != null ? Number(raw.activeReservation.ambulance_lat) : null),
+    ambulanceLng: typeof raw.ambulanceLng === 'number' ? raw.ambulanceLng : (raw.activeReservation?.ambulance_lng != null ? Number(raw.activeReservation.ambulance_lng) : null),
 
     raw,
   };

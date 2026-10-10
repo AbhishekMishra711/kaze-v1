@@ -190,7 +190,8 @@ app.get('/api/v1/incidents/:id', async (req, res) => {
     const resRow = await db.query(
       `SELECT r.*, h.name as hospital_name, h.latitude as hospital_lat, h.longitude as hospital_lng,
               h.contact_phone as hospital_phone,
-              a.vehicle_number, a.driver_name, a.driver_phone
+              a.vehicle_number, a.driver_name, a.driver_phone,
+              a.current_lat as ambulance_lat, a.current_lng as ambulance_lng
        FROM reservations r
        JOIN hospitals h ON r.hospital_id = h.id
        LEFT JOIN ambulances a ON r.ambulance_id = a.id
@@ -536,9 +537,12 @@ app.get('/api/v1/hospitals/:id/resources', async (req, res) => {
 
 app.get('/api/v1/hospitals/:id/reservations', async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT r.*, i.triage_level, i.description_raw, i.latitude as inc_lat, i.longitude as inc_lng,
-              u.category as unit_category, u.unit_label, a.vehicle_number, a.driver_name, a.driver_phone
+    const rawRows = await db.query(
+      `SELECT r.id as reservation_id, r.incident_id, r.hospital_id, r.ambulance_id, r.status,
+              r.hold_expires_at, r.created_at,
+              i.triage_level, i.description_raw, i.latitude as inc_lat, i.longitude as inc_lng,
+              u.id as unit_id, u.category as unit_category, u.unit_label,
+              a.vehicle_number, a.driver_name, a.driver_phone
        FROM reservations r
        JOIN incidents i ON r.incident_id = i.id
        JOIN resource_units u ON r.unit_id = u.id
@@ -547,7 +551,163 @@ app.get('/api/v1/hospitals/:id/reservations', async (req, res) => {
        ORDER BY r.created_at DESC`,
       [req.params.id]
     );
-    res.json({ success: true, reservations: result.rows });
+
+    // Group rows by incident_id so that 1 patient = 1 consolidated card with all required/held units
+    const incidentMap = new Map<string, any>();
+
+    for (const row of rawRows.rows) {
+      if (!incidentMap.has(row.incident_id)) {
+        incidentMap.set(row.incident_id, {
+          id: row.reservation_id, // Primary reservation ID
+          incident_id: row.incident_id,
+          hospital_id: row.hospital_id,
+          ambulance_id: row.ambulance_id,
+          status: row.status,
+          hold_expires_at: row.hold_expires_at,
+          created_at: row.created_at,
+          triage_level: row.triage_level,
+          description_raw: row.description_raw,
+          inc_lat: row.inc_lat,
+          inc_lng: row.inc_lng,
+          vehicle_number: row.vehicle_number,
+          driver_name: row.driver_name,
+          driver_phone: row.driver_phone,
+          unit_category: row.unit_category,
+          unit_label: row.unit_label,
+          reservation_ids: [row.reservation_id],
+          units: [{
+            reservation_id: row.reservation_id,
+            unit_id: row.unit_id,
+            category: row.unit_category,
+            unit_label: row.unit_label,
+            status: row.status
+          }]
+        });
+      } else {
+        const existing = incidentMap.get(row.incident_id);
+        existing.reservation_ids.push(row.reservation_id);
+        existing.units.push({
+          reservation_id: row.reservation_id,
+          unit_id: row.unit_id,
+          category: row.unit_category,
+          unit_label: row.unit_label,
+          status: row.status
+        });
+        if (row.status === 'HELD' && existing.status !== 'HELD') {
+          existing.status = 'HELD';
+        }
+      }
+    }
+
+    const grouped = Array.from(incidentMap.values());
+    res.json({ success: true, reservations: grouped, count: grouped.length });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Single-Click: Accept ALL units held for an incident at once
+app.post('/api/v1/hospitals/incidents/:incidentId/accept', async (req, res) => {
+  try {
+    const { incidentId } = req.params;
+
+    const updateRes = await db.query(
+      `UPDATE reservations 
+       SET status = 'CONFIRMED', updated_at = NOW() 
+       WHERE incident_id = $1 AND status = 'HELD'
+       RETURNING id, unit_id, hospital_id, ambulance_id`,
+      [incidentId]
+    );
+
+    if (updateRes.rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'No held reservations found to confirm' });
+    }
+
+    await db.query(`UPDATE incidents SET status = 'RESERVED', updated_at = NOW() WHERE id = $1`, [incidentId]);
+
+    const resRow = await db.query(
+      `SELECT r.*, h.name as hospital_name, a.vehicle_number, a.driver_name, a.driver_phone
+       FROM reservations r
+       JOIN hospitals h ON r.hospital_id = h.id
+       LEFT JOIN ambulances a ON r.ambulance_id = a.id
+       WHERE r.incident_id = $1
+       ORDER BY r.created_at DESC LIMIT 1`,
+      [incidentId]
+    );
+
+    const reservation = resRow.rows[0];
+    io.emit('reservation:confirmed', { incidentId, reservation });
+    io.emit('incident:updated', { incidentId, status: 'RESERVED', reservation });
+
+    res.json({
+      success: true,
+      message: `Confirmed all ${updateRes.rows.length} units for Patient #${incidentId.slice(0, 8)}`,
+      confirmedUnits: updateRes.rows.length,
+      reservation
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Single-Click: Reject ALL units for an incident at once (Triggers Dynamic Replanning)
+app.post('/api/v1/hospitals/incidents/:incidentId/reject', async (req, res) => {
+  try {
+    const { incidentId } = req.params;
+    const { reason, hospitalId } = req.body;
+
+    await db.query(
+      `UPDATE reservations 
+       SET status = 'REJECTED', rejection_reason = $1, updated_at = NOW() 
+       WHERE incident_id = $2 AND status IN ('HELD', 'CONFIRMED')`,
+      [reason || 'ER_CAPACITY_OVERLOAD', incidentId]
+    );
+
+    const replan = await DynamicReplannerService.replanIncident(
+      incidentId,
+      'HOSPITAL_STAFF_REJECTED',
+      hospitalId
+    );
+
+    io.emit('replan:alert', { incidentId, replan });
+    res.json({ success: true, message: 'All reservations rejected and patient dynamically replanned', replan });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Single-Click: Handover ALL units for an incident at once & Free Ambulance
+app.post('/api/v1/hospitals/incidents/:incidentId/handover', async (req, res) => {
+  try {
+    const { incidentId } = req.params;
+
+    const resRows = await db.query(
+      `SELECT id, unit_id, ambulance_id FROM reservations 
+       WHERE incident_id = $1 AND status IN ('CONFIRMED', 'HELD', 'ARRIVED')`,
+      [incidentId]
+    );
+
+    if (resRows.rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'No active reservations to complete handover' });
+    }
+
+    let ambulanceId: string | null = null;
+    for (const r of resRows.rows) {
+      await db.query(`UPDATE reservations SET status = 'HANDED_OVER', updated_at = NOW() WHERE id = $1`, [r.id]);
+      await db.query(`UPDATE resource_units SET status = 'OCCUPIED', updated_at = NOW() WHERE id = $1`, [r.unit_id]);
+      if (r.ambulance_id) ambulanceId = r.ambulance_id;
+    }
+
+    if (ambulanceId) {
+      await db.query(`UPDATE ambulances SET status = 'AVAILABLE', updated_at = NOW() WHERE id = $1`, [ambulanceId]);
+    }
+
+    await db.query(`UPDATE incidents SET status = 'HANDED_OVER', updated_at = NOW() WHERE id = $1`, [incidentId]);
+
+    io.emit('handover:completed', { incidentId, ambulanceId });
+    io.emit('incident:updated', { incidentId, status: 'HANDED_OVER' });
+
+    res.json({ success: true, message: 'Patient handover completed and ambulance released back to service' });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -555,10 +715,22 @@ app.get('/api/v1/hospitals/:id/reservations', async (req, res) => {
 
 app.post('/api/v1/hospitals/reservations/:id/accept', async (req, res) => {
   try {
-    const ok = await ReservationService.confirmReservation(req.params.id);
-    if (!ok) return res.status(400).json({ success: false, error: 'Could not confirm reservation' });
+    // If this reservation belongs to an incident with multiple units, confirm all sibling units
+    const findRes = await db.query(`SELECT incident_id FROM reservations WHERE id = $1`, [req.params.id]);
+    let incidentId: string | null = null;
 
-    // Fetch reservation details to broadcast
+    if (findRes.rows.length > 0 && findRes.rows[0].incident_id) {
+      incidentId = findRes.rows[0].incident_id;
+      await db.query(
+        `UPDATE reservations SET status = 'CONFIRMED', updated_at = NOW() 
+         WHERE incident_id = $1 AND status = 'HELD'`,
+        [incidentId]
+      );
+      await db.query(`UPDATE incidents SET status = 'RESERVED', updated_at = NOW() WHERE id = $1`, [incidentId]);
+    } else {
+      await ReservationService.confirmReservation(req.params.id);
+    }
+
     const resRow = await db.query(
       `SELECT r.*, h.name as hospital_name, a.vehicle_number, a.driver_name, a.driver_phone
        FROM reservations r
@@ -569,12 +741,8 @@ app.post('/api/v1/hospitals/reservations/:id/accept', async (req, res) => {
     );
     const reservation = resRow.rows[0];
 
-    if (reservation?.incident_id) {
-      await db.query(`UPDATE incidents SET status = 'RESERVED', updated_at = NOW() WHERE id = $1`, [reservation.incident_id]);
-    }
-
-    io.emit('reservation:confirmed', { reservationId: req.params.id, reservation });
-    io.emit('incident:updated', { incidentId: reservation?.incident_id, status: 'RESERVED', reservation });
+    io.emit('reservation:confirmed', { reservationId: req.params.id, incidentId, reservation });
+    io.emit('incident:updated', { incidentId, status: 'RESERVED', reservation });
 
     res.json({ success: true, message: 'Reservation confirmed by hospital ER', reservation });
   } catch (err: any) {
@@ -585,13 +753,31 @@ app.post('/api/v1/hospitals/reservations/:id/accept', async (req, res) => {
 app.post('/api/v1/hospitals/reservations/:id/reject', async (req, res) => {
   try {
     const { reason, hospitalId } = req.body;
-    const result = await ReservationService.rejectReservation(req.params.id, reason || 'ER_CAPACITY_OVERLOAD');
+    const findRes = await db.query(`SELECT incident_id FROM reservations WHERE id = $1`, [req.params.id]);
+    const incidentId = findRes.rows[0]?.incident_id;
 
+    if (incidentId) {
+      await db.query(
+        `UPDATE reservations SET status = 'REJECTED', rejection_reason = $1, updated_at = NOW() 
+         WHERE incident_id = $2 AND status IN ('HELD', 'CONFIRMED')`,
+        [reason || 'ER_CAPACITY_OVERLOAD', incidentId]
+      );
+
+      const replan = await DynamicReplannerService.replanIncident(
+        incidentId,
+        'HOSPITAL_STAFF_REJECTED',
+        hospitalId
+      );
+
+      io.emit('replan:alert', { incidentId, replan });
+      return res.json({ success: true, message: 'Reservation rejected and patient dynamically replanned', replan });
+    }
+
+    const result = await ReservationService.rejectReservation(req.params.id, reason || 'ER_CAPACITY_OVERLOAD');
     if (!result.success || !result.incidentId) {
       return res.status(400).json({ success: false, error: 'Could not reject reservation' });
     }
 
-    // Trigger instant dynamic replanning
     const replan = await DynamicReplannerService.replanIncident(
       result.incidentId,
       'HOSPITAL_STAFF_REJECTED',
@@ -599,7 +785,6 @@ app.post('/api/v1/hospitals/reservations/:id/reject', async (req, res) => {
     );
 
     io.emit('replan:alert', { incidentId: result.incidentId, replan });
-
     res.json({ success: true, message: 'Reservation rejected and patient dynamically replanned', replan });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -608,6 +793,35 @@ app.post('/api/v1/hospitals/reservations/:id/reject', async (req, res) => {
 
 app.post('/api/v1/hospitals/reservations/:id/handover', async (req, res) => {
   try {
+    const findRes = await db.query(`SELECT incident_id FROM reservations WHERE id = $1`, [req.params.id]);
+    const incidentId = findRes.rows[0]?.incident_id;
+
+    if (incidentId) {
+      const resRows = await db.query(
+        `SELECT id, unit_id, ambulance_id FROM reservations 
+         WHERE incident_id = $1 AND status IN ('CONFIRMED', 'HELD', 'ARRIVED')`,
+        [incidentId]
+      );
+
+      let ambulanceId: string | null = null;
+      for (const r of resRows.rows) {
+        await db.query(`UPDATE reservations SET status = 'HANDED_OVER', updated_at = NOW() WHERE id = $1`, [r.id]);
+        await db.query(`UPDATE resource_units SET status = 'OCCUPIED', updated_at = NOW() WHERE id = $1`, [r.unit_id]);
+        if (r.ambulance_id) ambulanceId = r.ambulance_id;
+      }
+
+      if (ambulanceId) {
+        await db.query(`UPDATE ambulances SET status = 'AVAILABLE', updated_at = NOW() WHERE id = $1`, [ambulanceId]);
+      }
+
+      await db.query(`UPDATE incidents SET status = 'HANDED_OVER', updated_at = NOW() WHERE id = $1`, [incidentId]);
+
+      io.emit('handover:completed', { incidentId, ambulanceId });
+      io.emit('incident:updated', { incidentId, status: 'HANDED_OVER' });
+
+      return res.json({ success: true, message: 'Patient handover completed successfully' });
+    }
+
     const ok = await ReservationService.completeHandover(req.params.id);
     if (!ok) return res.status(400).json({ success: false, error: 'Could not complete handover' });
 

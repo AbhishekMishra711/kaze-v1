@@ -1,16 +1,7 @@
 // API Service for HLTH-02 Emergency Resource Allocator
+import { getApiBaseUrl, setApiBaseUrl, getCandidateUrls } from './api';
 
-export const DEFAULT_BASE_URL = 'http://localhost:4000';
-
-let activeBaseUrl = DEFAULT_BASE_URL;
-
-export const setApiBaseUrl = (url) => {
-  if (url && typeof url === 'string') {
-    activeBaseUrl = url.trim().replace(/\/+$/, '');
-  }
-};
-
-export const getApiBaseUrl = () => activeBaseUrl;
+export { getApiBaseUrl, setApiBaseUrl, getCandidateUrls };
 
 /**
  * Trigger SOS Incident
@@ -24,7 +15,7 @@ export const triggerSOSIncident = async ({
   callerPhone = '+91 98765 43210',
   callerName = 'Citizen Caller',
 }) => {
-  const url = `${activeBaseUrl}/api/v1/incidents/sos`;
+  const url = `${getApiBaseUrl()}/api/v1/incidents/sos`;
   const payload = {
     lat: Number(lat) || 18.5204,
     lng: Number(lng) || 73.8567,
@@ -82,7 +73,7 @@ export const triggerSOSIncident = async ({
  * Endpoint: GET /api/v1/incidents/:id
  */
 export const fetchIncidentStatus = async (id) => {
-  const url = `${activeBaseUrl}/api/v1/incidents/${id}`;
+  const url = `${getApiBaseUrl()}/api/v1/incidents/${id}`;
 
   try {
     const controller = new AbortController();

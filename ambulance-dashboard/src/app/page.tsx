@@ -1,6 +1,6 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
+import SatelliteTrackingMap from './components/SatelliteTrackingMap';
 
 const API_BASE = 'http://localhost:4000';
 
@@ -75,8 +75,8 @@ export default function AmbulanceAdminDashboard() {
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [selectedAmbulanceId, setSelectedAmbulanceId] = useState<string>('');
 
-  // UI Tabs: 'DISPATCH' | 'FLEET' | 'COMPLETED'
-  const [activeTab, setActiveTab] = useState<'DISPATCH' | 'FLEET'>('DISPATCH');
+  // UI Tabs: 'DISPATCH' | 'FLEET' | 'MAP'
+  const [activeTab, setActiveTab] = useState<'DISPATCH' | 'FLEET' | 'MAP'>('DISPATCH');
   const [actionMsg, setActionMsg] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   // Restore session
@@ -444,6 +444,20 @@ export default function AmbulanceAdminDashboard() {
               <span>🚑 108 Fleet Status</span>
               <span className="text-xs text-slate-400 font-normal">({ambulances.length} vehicles)</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('MAP')}
+              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                activeTab === 'MAP'
+                  ? 'border-blue-600 text-blue-700 font-bold'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <span>🛰️ Satellite Tracking Radar</span>
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-bold">
+                SWIGGY / BLINKIT
+              </span>
+            </button>
           </div>
         </div>
       </header>
@@ -664,6 +678,47 @@ export default function AmbulanceAdminDashboard() {
                     </div>
                   )}
 
+                  {/* Live Satellite Dispatch Radar (Swiggy / Blinkit style movement) */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🛰️ Live Satellite Route Radar (Swiggy / Blinkit Movement)</span>
+                      </h4>
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        Bounded to Pune Metro • Esri Optical Earth Imagery
+                      </span>
+                    </div>
+                    <SatelliteTrackingMap
+                      patientLocation={{
+                        lat: selectedIncident.latitude,
+                        lng: selectedIncident.longitude,
+                        label: selectedIncident.address_text || 'Emergency Location',
+                      }}
+                      ambulance={
+                        ambulances.find((a) => a.id === selectedAmbulanceId) ||
+                        ambulances[0] || {
+                          vehicle_number: 'MH-12-EM-1081',
+                          driver_name: 'Santosh Pawar',
+                          driver_phone: '+91 98230 10801',
+                          current_lat: 18.635,
+                          current_lng: 73.795,
+                        }
+                      }
+                      hospitalLocation={
+                        activeReservation
+                          ? {
+                              lat: activeReservation.hospital_lat || 18.6253,
+                              lng: activeReservation.hospital_lng || 73.8166,
+                              label: activeReservation.hospital_name || 'Designated Hospital',
+                            }
+                          : null
+                      }
+                      isDispatched={Boolean(
+                        activeReservation?.status === 'CONFIRMED' || selectedIncident.status === 'EN_ROUTE'
+                      )}
+                    />
+                  </div>
+
                   {/* Automated Nearest Hospital Calculation & Matching */}
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
@@ -822,6 +877,82 @@ export default function AmbulanceAdminDashboard() {
                 </div>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 3: SATELLITE TRACKING RADAR (SWIGGY / BLINKIT STYLE)           */}
+        {/* ================================================================= */}
+        {activeTab === 'MAP' && (
+          <section className="space-y-4">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Pune Metro Satellite Tracking Grid</h2>
+                <p className="text-xs text-slate-500">
+                  Real photographic Earth optical map • Simulated real-time ambulance transit with 🚑 emoji • Hard-bounded to Pune metropolitan coordinates
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-mono">
+                  Bounds: 18.35°N - 18.82°N, 73.65°E - 74.15°E
+                </span>
+              </div>
+            </div>
+
+            {/* Incident Quick Selector if multiple incidents exist */}
+            {incidents.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-wrap items-center gap-3">
+                <span className="text-xs font-bold text-slate-700">Track Incident:</span>
+                <div className="flex flex-wrap gap-2">
+                  {incidents.map((inc) => (
+                    <button
+                      key={inc.id}
+                      onClick={() => handleSelectIncident(inc)}
+                      className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-colors ${
+                        selectedIncident?.id === inc.id
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      #{inc.id.slice(0, 8)} ({inc.triage_level})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Satellite Map Component */}
+            <SatelliteTrackingMap
+              patientLocation={{
+                lat: selectedIncident?.latitude || 18.6253,
+                lng: selectedIncident?.longitude || 73.8166,
+                label: selectedIncident?.address_text || 'Akurdi Railway Station Chowk, Pune',
+              }}
+              ambulance={
+                ambulances.find((a) => a.id === selectedAmbulanceId) ||
+                ambulances[0] || {
+                  vehicle_number: 'MH-12-EM-1081',
+                  driver_name: 'Santosh Pawar',
+                  driver_phone: '+91 98230 10801',
+                  current_lat: 18.638,
+                  current_lng: 73.792,
+                }
+              }
+              hospitalLocation={
+                activeReservation
+                  ? {
+                      lat: activeReservation.hospital_lat || 18.6253,
+                      lng: activeReservation.hospital_lng || 73.8166,
+                      label: activeReservation.hospital_name || 'Designated Hospital',
+                    }
+                  : {
+                      lat: 18.6253,
+                      lng: 73.8166,
+                      label: 'Dr. D.Y. Patil Medical College & Hospital',
+                    }
+              }
+              isDispatched={true}
+            />
           </section>
         )}
       </main>

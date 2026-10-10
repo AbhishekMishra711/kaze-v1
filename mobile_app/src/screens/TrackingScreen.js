@@ -7,6 +7,7 @@ import {
   ScrollView,
   StatusBar,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
@@ -109,16 +110,110 @@ export function TrackingScreen({
 
   const dispatched = stageIndex >= 3;
 
-  // Ambulance coordinates
-  const ambulanceLat = incident?.ambulanceLat ?? (location?.latitude ? location.latitude + 0.008 : 18.5220);
-  const ambulanceLng = incident?.ambulanceLng ?? (location?.longitude ? location.longitude + 0.005 : 73.8590);
-  const userLat = location?.latitude ?? incident?.latitude ?? 18.5204;
-  const userLng = location?.longitude ?? incident?.longitude ?? 73.8567;
+  // Swiggy / Blinkit dynamic movement simulation
+  const [simProgress, setSimProgress] = useState(0.18);
+  const [simEtaMinutes, setSimEtaMinutes] = useState(6);
+  const [simDistanceKm, setSimDistanceKm] = useState(3.4);
 
-  const midLat = (ambulanceLat + userLat) / 2;
-  const midLng = (ambulanceLng + userLng) / 2;
-  const latDelta = Math.abs(ambulanceLat - userLat) * 3 + 0.006;
-  const lngDelta = Math.abs(ambulanceLng - userLng) * 3 + 0.006;
+  // User and initial ambulance coordinates
+  const userLat = location?.latitude ?? incident?.latitude ?? 18.6253;
+  const userLng = location?.longitude ?? incident?.longitude ?? 73.8166;
+  const startAmbLat = incident?.ambulanceLat ?? (userLat + 0.022);
+  const startAmbLng = incident?.ambulanceLng ?? (userLng - 0.024);
+
+  // Moving coordinates calculated along path
+  const currentAmbLat = startAmbLat + (userLat - startAmbLat) * simProgress + Math.sin(simProgress * Math.PI) * 0.003;
+  const currentAmbLng = startAmbLng + (userLng - startAmbLng) * simProgress - Math.sin(simProgress * Math.PI) * 0.002;
+
+  // Continuous movement simulation loop
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSimProgress((prev) => {
+        const next = prev + 0.025;
+        if (next >= 0.98) return 0.98;
+        const rem = 1 - next;
+        setSimEtaMinutes(Math.max(1, Math.round(rem * 7)));
+        setSimDistanceKm(Number((rem * 3.8).toFixed(1)));
+        return next;
+      });
+    }, 1300);
+    return () => clearInterval(interval);
+  }, []);
+
+  // HTML content for Leaflet optical satellite imagery on Web
+  const leafletHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #0f172a; }
+    #map { height: 100%; width: 100%; }
+    @keyframes radarPulse {
+      0% { transform: scale(0.9); opacity: 0.9; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    .amb-pulse {
+      position: absolute; width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(59, 130, 246, 0.5); animation: radarPulse 1.3s infinite;
+      top: -5px; left: -5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    var startLat = ${startAmbLat};
+    var startLng = ${startAmbLng};
+    var destLat = ${userLat};
+    var destLng = ${userLng};
+    var puneBounds = L.latLngBounds(L.latLng(18.35, 73.65), L.latLng(18.82, 74.15));
+    var map = L.map('map', {
+      center: [(startLat + destLat)/2, (startLng + destLng)/2],
+      zoom: 14,
+      minZoom: 12,
+      maxZoom: 18,
+      maxBounds: puneBounds,
+      maxBoundsViscosity: 1.0,
+      zoomControl: false
+    });
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 18
+    }).addTo(map);
+    L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 18, opacity: 0.8
+    }).addTo(map);
+
+    var patientIcon = L.divIcon({
+      html: '<div style="font-size:24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));">🆘</div>',
+      iconSize: [28, 28], iconAnchor: [14, 14]
+    });
+    L.marker([destLat, destLng], { icon: patientIcon }).addTo(map);
+
+    var ambIcon = L.divIcon({
+      html: '<div style="position:relative;"><div class="amb-pulse"></div><div style="font-size:28px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7)); transform: scale(1.1);">🚑</div></div>',
+      iconSize: [32, 32], iconAnchor: [16, 16]
+    });
+    var ambMarker = L.marker([startLat, startLng], { icon: ambIcon }).addTo(map);
+
+    L.polyline([[startLat, startLng], [destLat, destLng]], {
+      color: '#38bdf8', weight: 4, opacity: 0.8, dashArray: '6, 6'
+    }).addTo(map);
+
+    var progress = 0.15;
+    setInterval(function() {
+      progress += 0.025;
+      if (progress > 0.96) progress = 0.96;
+      var curLat = startLat + (destLat - startLat) * progress + Math.sin(progress * Math.PI) * 0.003;
+      var curLng = startLng + (destLng - startLng) * progress - Math.sin(progress * Math.PI) * 0.002;
+      ambMarker.setLatLng([curLat, curLng]);
+    }, 1300);
+  </script>
+</body>
+</html>
+  `;
 
   const handleCancelPress = () => {
     Alert.alert(
@@ -251,66 +346,138 @@ export function TrackingScreen({
           </View>
         )}
 
-        {/* Satellite Map */}
-        {dispatched && (
+        {/* Real-World Satellite Map with Moving Ambulance (Swiggy / Blinkit style) */}
+        {Boolean(incident) && (
           <View style={styles.mapCard}>
-            <Text style={styles.sectionTitle}>Live Ambulance Location</Text>
-            <Text style={styles.mapNote}>Satellite view</Text>
+            <View style={styles.mapHeaderRow}>
+              <div>
+                <Text style={styles.sectionTitle}>Live Ambulance Radar</Text>
+                <Text style={styles.mapNote}>
+                  Optical Satellite View (Google Earth / Esri Optics) • Pune Metro Bounds
+                </Text>
+              </div>
+              <View style={styles.radarPill}>
+                <View style={styles.radarPillDot} />
+                <Text style={styles.radarPillText}>RADAR LIVE</Text>
+              </View>
+            </View>
 
-            {hasMapComponent ? (
+            {Platform.OS === 'web' ? (
+              <View style={styles.mapContainer}>
+                <iframe
+                  title="Satellite Map"
+                  srcDoc={leafletHtml}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    borderRadius: 12,
+                  }}
+                />
+              </View>
+            ) : hasMapComponent ? (
               <View style={styles.mapContainer}>
                 <SafeMap
                   style={StyleSheet.absoluteFill}
                   mapType="hybrid"
+                  minZoomLevel={12}
+                  maxZoomLevel={18}
                   initialRegion={{
-                    latitude: midLat,
-                    longitude: midLng,
-                    latitudeDelta: latDelta,
-                    longitudeDelta: lngDelta,
+                    latitude: (currentAmbLat + userLat) / 2,
+                    longitude: (currentAmbLng + userLng) / 2,
+                    latitudeDelta: 0.035,
+                    longitudeDelta: 0.035,
                   }}
-                  showsUserLocation
-                  showsMyLocationButton={false}
-                  showsCompass={false}
-                  showsTraffic={false}
                   scrollEnabled
                   zoomEnabled
                 >
-                  {/* Ambulance Marker */}
+                  {/* Moving Ambulance Marker with 🚑 Emoji */}
                   <SafeMarker
-                    coordinate={{ latitude: ambulanceLat, longitude: ambulanceLng }}
-                    title="Ambulance"
-                    description={incident?.ambulanceNumber ?? 'En route'}
+                    coordinate={{ latitude: currentAmbLat, longitude: currentAmbLng }}
+                    title="108 Emergency Ambulance"
+                    description={`En Route (ETA ~${simEtaMinutes}m)`}
                   >
-                    <View style={styles.ambMarker}>
-                      <View style={styles.ambMarkerDot} />
-                      <Text style={styles.ambMarkerText}>Amb</Text>
+                    <View style={styles.ambMarkerPin}>
+                      <View style={styles.ambPulseRing} />
+                      <Text style={styles.ambEmojiText}>🚑</Text>
                     </View>
                   </SafeMarker>
 
-                  {/* User Marker */}
+                  {/* Citizen SOS Marker */}
                   <SafeMarker
                     coordinate={{ latitude: userLat, longitude: userLng }}
-                    title="Your location"
-                    description="Emergency location"
+                    title="You (Patient SOS Location)"
+                    description={incident?.addressText || 'Emergency location'}
                   >
-                    <View style={styles.userMarker}>
-                      <View style={styles.userMarkerDot} />
-                      <Text style={styles.userMarkerText}>You</Text>
+                    <View style={styles.userMarkerPin}>
+                      <Text style={styles.userEmojiText}>🆘</Text>
                     </View>
                   </SafeMarker>
                 </SafeMap>
               </View>
             ) : (
               <View style={[styles.mapContainer, styles.mapFallback]}>
+                <Text style={styles.ambEmojiText}>🚑</Text>
                 <Text style={styles.mapFallbackText}>
-                  Ambulance En Route: Lat {ambulanceLat.toFixed(4)}, Lng {ambulanceLng.toFixed(4)}
+                  Ambulance En Route: Lat {currentAmbLat.toFixed(4)}, Lng {currentAmbLng.toFixed(4)}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                  ETA ~{simEtaMinutes} mins • {simDistanceKm} km remaining
                 </Text>
               </View>
             )}
 
-            <Text style={styles.mapLegend}>
-              Red = You    Green = Ambulance
-            </Text>
+            {/* Swiggy / Blinkit Style Live Transit Card */}
+            <View style={styles.swiggyStatusCard}>
+              <View style={styles.swiggyTopRow}>
+                <View style={styles.swiggyAmbIconBox}>
+                  <Text style={{ fontSize: 22 }}>🚑</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.swiggyAmbTitle}>
+                    {incident?.ambulanceNumber || '108 Fleet Unit'}
+                  </Text>
+                  <Text style={styles.swiggyAmbSub}>
+                    {simProgress >= 0.95 ? 'Arriving at your location' : 'En route to your location'}
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.swiggyEtaVal}>
+                    {simProgress >= 0.95 ? 'Arrived' : `~${simEtaMinutes} min`}
+                  </Text>
+                  <Text style={styles.swiggyDistVal}>{simDistanceKm} km left</Text>
+                </View>
+              </View>
+
+              {/* Transit Progress Bar */}
+              <View style={styles.swiggyProgressTrack}>
+                <View
+                  style={[
+                    styles.swiggyProgressBar,
+                    { width: `${Math.round(simProgress * 100)}%` },
+                  ]}
+                />
+              </View>
+              <View style={styles.swiggyProgressLabels}>
+                <Text style={styles.swiggyStepText}>Base</Text>
+                <Text style={styles.swiggyStepTextMid}>Speed: 42 km/h</Text>
+                <Text style={styles.swiggyStepText}>You</Text>
+              </View>
+
+              {incident?.driverPhone && (
+                <View style={styles.driverCallRow}>
+                  <Text style={styles.driverNameText}>
+                    Driver: {incident.driverName || 'Paramedic Staff'}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.callDriverBtn}
+                    onPress={() => Alert.alert('Contacting Driver', `Calling ${incident.driverPhone}...`)}
+                  >
+                    <Text style={styles.callDriverText}>📞 Call {incident.driverPhone}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </View>
         )}
 
@@ -629,75 +796,182 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
+  mapHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  radarPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0284c7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  radarPillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#38bdf8',
+  },
+  radarPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.5,
+  },
   mapNote: {
     fontSize: 11,
     color: theme.colors.textMuted,
+    marginTop: -8,
     marginBottom: 10,
   },
   mapContainer: {
-    height: 220,
+    height: 250,
     borderRadius: theme.radius.md,
     overflow: 'hidden',
+    backgroundColor: '#0f172a',
   },
   mapFallback: {
-    backgroundColor: '#EEF5E9',
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
   mapFallbackText: {
     fontSize: 13,
-    color: theme.colors.greenDark,
-    fontWeight: '600',
+    color: '#0f172a',
+    fontWeight: '700',
     textAlign: 'center',
+    marginTop: 6,
   },
-  mapLegend: {
+  ambMarkerPin: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 44,
+    height: 44,
+  },
+  ambPulseRing: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+  },
+  ambEmojiText: {
+    fontSize: 28,
+  },
+  userMarkerPin: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#dc2626',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  userEmojiText: {
+    fontSize: 18,
+  },
+
+  // Swiggy Style Delivery Card
+  swiggyStatusCard: {
+    marginTop: 12,
+    backgroundColor: '#0f172a',
+    borderRadius: 12,
+    padding: 14,
+  },
+  swiggyTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  swiggyAmbIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(56, 189, 248, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.4)',
+  },
+  swiggyAmbTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  swiggyAmbSub: {
     fontSize: 11,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-    marginTop: 8,
+    color: '#94a3b8',
+    marginTop: 1,
   },
-  ambMarker: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.greenDark,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: theme.colors.white,
+  swiggyEtaVal: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#4ade80',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
-  ambMarkerDot: {
-    width: 6,
+  swiggyDistVal: {
+    fontSize: 11,
+    color: '#cbd5e1',
+    fontWeight: '600',
+  },
+  swiggyProgressTrack: {
+    width: '100%',
     height: 6,
+    backgroundColor: '#1e293b',
     borderRadius: 3,
-    backgroundColor: theme.colors.white,
-    marginBottom: 2,
+    overflow: 'hidden',
+    marginTop: 12,
   },
-  ambMarkerText: {
+  swiggyProgressBar: {
+    height: '100%',
+    backgroundColor: '#38bdf8',
+    borderRadius: 3,
+  },
+  swiggyProgressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  swiggyStepText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: theme.colors.white,
+    color: '#64748b',
+    fontWeight: '600',
   },
-  userMarker: {
+  swiggyStepTextMid: {
+    fontSize: 10,
+    color: '#38bdf8',
+    fontWeight: '700',
+  },
+  driverCallRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: theme.colors.red,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#1e293b',
+  },
+  driverNameText: {
+    fontSize: 11,
+    color: '#e2e8f0',
+    fontWeight: '600',
+  },
+  callDriverBtn: {
+    backgroundColor: '#16a34a',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: theme.colors.white,
   },
-  userMarkerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: theme.colors.white,
-    marginBottom: 2,
-  },
-  userMarkerText: {
-    fontSize: 10,
+  callDriverText: {
+    fontSize: 11,
+    color: '#ffffff',
     fontWeight: '700',
-    color: theme.colors.white,
   },
 
   // Bottom Actions

@@ -25,7 +25,7 @@ interface HospitalData {
 interface Reservation {
   id: string;
   incident_id: string;
-  unit_id: string;
+  unit_id?: string;
   hospital_id: string;
   ambulance_id: string | null;
   status: 'HELD' | 'CONFIRMED' | 'ARRIVED' | 'HANDED_OVER' | 'REJECTED';
@@ -34,12 +34,20 @@ interface Reservation {
   description_raw: string;
   inc_lat: number;
   inc_lng: number;
-  unit_category: string;
-  unit_label: string;
+  unit_category?: string;
+  unit_label?: string;
   vehicle_number: string | null;
   driver_name?: string | null;
   driver_phone?: string | null;
   created_at: string;
+  reservation_ids?: string[];
+  units?: Array<{
+    reservation_id: string;
+    unit_id: string;
+    category: string;
+    unit_label: string;
+    status: string;
+  }>;
 }
 
 interface ResourceUnit {
@@ -246,47 +254,51 @@ export default function HospitalDashboard() {
     }
   };
 
-  // Accept reservation
-  const acceptReservation = async (resId: string) => {
+  // Single-Click: Accept patient with all requested resources
+  const acceptIncident = async (incidentId: string) => {
     try {
-      const res = await fetch(`${API_BASE}/api/v1/hospitals/reservations/${resId}/accept`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/v1/hospitals/incidents/${incidentId}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hospitalId: hospital?.id })
+      });
       const data = await res.json();
       if (data.success) {
-        showToast('Reservation confirmed! Inbound ambulance & dispatcher notified.', 'success');
+        showToast(`Patient accepted! All resources confirmed at ER. Inbound ambulance notified.`, 'success');
         fetchHospitalData();
       } else {
-        showToast(data.error || 'Could not confirm reservation', 'error');
+        showToast(data.error || 'Could not confirm patient', 'error');
       }
     } catch (err: any) {
       showToast(err.message, 'error');
     }
   };
 
-  // Reject reservation (auto dynamic replan)
-  const rejectReservation = async (resId: string) => {
-    const reason = window.prompt('Reason for rejecting emergency reservation:', 'ER_CAPACITY_OVERLOAD') || 'ER_CAPACITY_OVERLOAD';
+  // Single-Click: Reject patient and trigger dynamic replan
+  const rejectIncident = async (incidentId: string) => {
+    const reason = window.prompt('Reason for declining emergency patient:', 'ER_CAPACITY_OVERLOAD') || 'ER_CAPACITY_OVERLOAD';
     try {
-      const res = await fetch(`${API_BASE}/api/v1/hospitals/reservations/${resId}/reject`, {
+      const res = await fetch(`${API_BASE}/api/v1/hospitals/incidents/${incidentId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason, hospitalId: hospital?.id })
       });
       const data = await res.json();
       if (data.success) {
-        showToast('Reservation rejected. Patient dynamically replanned to next hospital!', 'info');
+        showToast('Patient declined. Dynamic replanning rerouted ambulance to next hospital!', 'info');
         fetchHospitalData();
       } else {
-        showToast(data.error || 'Could not reject reservation', 'error');
+        showToast(data.error || 'Could not decline patient', 'error');
       }
     } catch (err: any) {
       showToast(err.message, 'error');
     }
   };
 
-  // Handover completed (frees ambulance)
-  const completeHandover = async (resId: string, vehicleNum?: string | null) => {
+  // Single-Click: Patient handover completed (frees ambulance)
+  const completeIncidentHandover = async (incidentId: string, vehicleNum?: string | null) => {
     try {
-      const res = await fetch(`${API_BASE}/api/v1/hospitals/reservations/${resId}/handover`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/v1/hospitals/incidents/${incidentId}/handover`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         showToast(`Patient admitted at ER! Ambulance ${vehicleNum || ''} is now free and back in service.`, 'success');
@@ -803,13 +815,25 @@ export default function HospitalDashboard() {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-3 text-sm">
                         <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                          <span className="text-[11px] font-bold text-slate-500 uppercase block">Required Unit</span>
-                          <span className="text-base font-bold text-slate-900 block mt-0.5">
-                            {req.unit_category.replace(/_/g, ' ')}
+                          <span className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
+                            Requested Units ({req.units?.length || 1})
                           </span>
-                          <span className="text-xs text-emerald-700 font-mono font-semibold">
-                            Hold on: {req.unit_label}
-                          </span>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {req.units && req.units.length > 0 ? (
+                              req.units.map((u, ui) => (
+                                <span
+                                  key={ui}
+                                  className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800"
+                                >
+                                  🛏️ {u.category.replace(/_/g, ' ')} ({u.unit_label})
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs font-bold text-slate-900">
+                                {req.unit_category?.replace(/_/g, ' ')} ({req.unit_label})
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -833,24 +857,24 @@ export default function HospitalDashboard() {
 
                       <div className="bg-amber-50/60 p-3 rounded-lg border border-amber-200/60 text-xs text-slate-800 mb-4">
                         <span className="font-bold text-amber-900 block mb-0.5">Triage Clinical Description:</span>
-                        "{req.description_raw || 'Emergency SOS trigger without description.'}"
+                        &quot;{req.description_raw || 'Emergency SOS trigger without description.'}&quot;
                       </div>
 
-                      {/* Action Buttons */}
+                      {/* Action Buttons: Single Click for the entire patient */}
                       <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
                         <button
                           type="button"
-                          onClick={() => rejectReservation(req.id)}
+                          onClick={() => rejectIncident(req.incident_id)}
                           className="px-4 py-2 rounded-lg text-xs font-bold text-rose-700 bg-white border border-rose-300 hover:bg-rose-50 transition-colors"
                         >
                           ✕ Reject & Replan Patient
                         </button>
                         <button
                           type="button"
-                          onClick={() => acceptReservation(req.id)}
-                          className="px-5 py-2 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-colors"
+                          onClick={() => acceptIncident(req.incident_id)}
+                          className="px-5 py-2 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-colors flex items-center gap-1.5"
                         >
-                          ✓ Accept & Confirm Bed
+                          <span>✓ Accept Patient ({req.units?.length || 1} Resources)</span>
                         </button>
                       </div>
                     </div>
@@ -1129,9 +1153,22 @@ export default function HospitalDashboard() {
                         )}
                       </div>
 
-                      <p className="text-xs text-slate-600 font-medium">
-                        Patient Incident #{c.incident_id.slice(0, 8)} • Reserved {c.unit_category.replace(/_/g, ' ')} ({c.unit_label})
-                      </p>
+                      <div className="text-xs text-slate-600 font-medium">
+                        <span>Patient Incident #{c.incident_id.slice(0, 8)}</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {c.units && c.units.length > 0 ? (
+                            c.units.map((u, ui) => (
+                              <span key={ui} className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-800">
+                                🛏️ {u.category.replace(/_/g, ' ')} ({u.unit_label})
+                              </span>
+                            ))
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-800">
+                              🛏️ {c.unit_category?.replace(/_/g, ' ') || 'Reserved Resource'} ({c.unit_label || 'Unit'})
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
                       <p className="text-xs text-slate-500 italic max-w-xl">
                         &quot;{c.description_raw || 'Emergency transfer'}&quot;
@@ -1141,7 +1178,7 @@ export default function HospitalDashboard() {
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => completeHandover(c.id, c.vehicle_number)}
+                        onClick={() => completeIncidentHandover(c.incident_id, c.vehicle_number)}
                         className="px-5 py-2.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors flex items-center gap-2"
                       >
                         <span>✓ Patient Arrived & Free Ambulance</span>
