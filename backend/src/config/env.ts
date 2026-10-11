@@ -7,7 +7,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   DATABASE_URL: z.string().optional().default(''),
-  ML_SERVICE_URL: z.string().default('http://localhost:8000'),
+  ML_SERVICE_URL: z.string().default('https://kaze-v1-2.onrender.com'),
   JWT_SECRET: z.string().default('super_secret_hackmatrix_jwt_token_2026'),
   ANTHROPIC_API_KEY: z.string().optional().default('')
 });

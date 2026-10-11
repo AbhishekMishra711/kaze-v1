@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+.env
+landing-page
+hospital-dashboard
+ambulance-dashboard
+mobile_app
+ml-service
+docs

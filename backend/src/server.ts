@@ -26,6 +26,16 @@ const io = new SocketIOServer(server, {
 app.use(cors());
 app.use(express.json());
 
+// Health check probe for Render, container orchestrators, and uptime monitors
+app.get(['/', '/health'], (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'hlth02-core-backend',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Background TTL hold cleaner (runs every 30s)
 setInterval(async () => {
   try {
@@ -1044,7 +1054,7 @@ app.get('/api/v1/evaluator/benchmark', async (req, res) => {
 // =================================================================
 async function start() {
   await runMigrations();
-  server.listen(env.PORT, () => {
+  server.listen(env.PORT, '0.0.0.0', () => {
     console.log(`================================================================`);
     console.log(`🚀 HLTH-02 Core Backend running on port ${env.PORT}`);
     console.log(`📡 WebSocket server listening for real-time telemetry`);
