@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY backend/package*.json backend/tsconfig.json ./
-RUN npm ci
+RUN npm install
 
 # Copy backend source and compile
 COPY backend/src ./src
@@ -21,7 +21,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY backend/package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm install --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 

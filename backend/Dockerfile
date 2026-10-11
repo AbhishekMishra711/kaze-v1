@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Install dependencies (including devDependencies needed for tsc)
 COPY package*.json tsconfig.json ./
-RUN npm ci
+RUN npm install
 
 # Copy source code and compile
 COPY src ./src
@@ -24,7 +24,7 @@ ENV NODE_ENV=production
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm install --omit=dev && npm cache clean --force
 
 # Copy compiled artifacts from builder stage
 COPY --from=builder /app/dist ./dist
