@@ -1,12 +1,400 @@
 @import "tailwindcss";
 
+/* ─── Design Tokens ─────────────────────────────────────────────── */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Backgrounds */
+  --bg-base:        #08101e;
+  --bg-surface:     #0c1628;
+  --bg-card:        #0f1b2d;
+  --bg-card-hover:  #132039;
+  --bg-input:       #0a1422;
+  --bg-overlay:     rgba(0, 0, 0, 0.75);
+
+  /* Glass */
+  --glass-bg:       rgba(12, 22, 40, 0.85);
+  --glass-border:   rgba(255, 255, 255, 0.06);
+
+  /* Accent — Blue (Ambulance) */
+  --accent:         #3b82f6;
+  --accent-dim:     rgba(59, 130, 246, 0.15);
+  --accent-glow:    rgba(59, 130, 246, 0.30);
+  --accent-dark:    #2563eb;
+
+  /* SOS / Danger */
+  --danger:         #ef4444;
+  --danger-dim:     rgba(239, 68, 68, 0.15);
+  --danger-glow:    rgba(239, 68, 68, 0.25);
+
+  /* Success */
+  --success:        #10b981;
+  --success-dim:    rgba(16, 185, 129, 0.15);
+
+  /* Warning */
+  --warning:        #f59e0b;
+  --warning-dim:    rgba(245, 158, 11, 0.15);
+
+  /* Text */
+  --text-primary:   #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted:     #475569;
+  --text-dim:       #2d3f58;
+
+  /* Borders */
+  --border:         rgba(255, 255, 255, 0.06);
+  --border-accent:  rgba(59, 130, 246, 0.30);
+  --border-danger:  rgba(239, 68, 68, 0.30);
+
+  /* Shadows */
+  --shadow-card:    0 1px 3px rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-glow-b:  0 0 24px rgba(59,130,246,0.12);
+  --shadow-glow-r:  0 0 24px rgba(239,68,68,0.12);
+
+  /* Radii */
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-pill: 9999px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-fast: 150ms;
+  --t-base: 280ms;
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.25); border-radius: var(--r-pill); }
+::-webkit-scrollbar-thumb:hover { background: rgba(59,130,246,0.45); }
+
+/* ─── Layout ─────────────────────────────────────────────────────── */
+.kaze-app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+.kaze-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(8, 16, 30, 0.92);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid var(--border);
+}
+.kaze-header-inner { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+.kaze-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px; gap: 16px;
+}
+
+/* Brand */
+.kaze-brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.kaze-brand-mark {
+  width: 38px; height: 38px; border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 16px rgba(59,130,246,0.25); flex-shrink: 0;
+}
+.kaze-brand-name { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+.kaze-brand-sub  { font-size: 0.68rem; color: var(--text-muted); font-family: ui-monospace, monospace; margin-top: 1px; }
+
+/* Status pill */
+.kaze-status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: var(--r-pill);
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.kaze-status-pill.online { background: rgba(16,185,129,0.10); color: #34d399; border: 1px solid rgba(16,185,129,0.22); }
+.kaze-status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.kaze-status-dot.pulse { animation: dotPulse 1.6s ease-in-out infinite; }
+@keyframes dotPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+
+/* Header meta */
+.kaze-header-meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.68rem; color: var(--text-muted); font-family: ui-monospace, monospace;
+}
+.kaze-meta-sep { color: rgba(255,255,255,0.08); }
+
+/* Header actions */
+.kaze-header-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ─── Buttons ────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--r-md);
+  font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; transition: all var(--t-fast) var(--ease);
+  border: 1px solid transparent; white-space: nowrap; line-height: 1;
+  text-decoration: none;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border); }
+.btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.05); color: var(--text-primary); border-color: rgba(255,255,255,0.10); }
+
+.btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; box-shadow: 0 2px 12px var(--accent-glow); }
+.btn-accent:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px var(--accent-glow); }
+
+.btn-danger { background: rgba(239,68,68,0.10); color: var(--danger); border-color: var(--border-danger); }
+.btn-danger:hover:not(:disabled) { background: rgba(239,68,68,0.18); }
+
+.btn-success { background: rgba(16,185,129,0.10); color: var(--success); border-color: rgba(16,185,129,0.28); }
+.btn-success:hover:not(:disabled) { background: rgba(16,185,129,0.18); }
+
+.btn-warning { background: rgba(245,158,11,0.10); color: var(--warning); border-color: rgba(245,158,11,0.28); }
+.btn-warning:hover:not(:disabled) { background: rgba(245,158,11,0.18); }
+
+/* SOS sim buttons */
+.sos-sim-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.sos-sim-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 0 4px; }
+.sos-sim-btn {
+  padding: 5px 10px; border-radius: 7px;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
+  cursor: pointer; transition: all var(--t-fast);
+  border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--text-secondary);
+}
+.sos-sim-btn.trauma { color: #f87171; border-color: rgba(239,68,68,0.20); }
+.sos-sim-btn.trauma:hover { background: rgba(239,68,68,0.10); }
+.sos-sim-btn.cardiac { color: #fbbf24; border-color: rgba(245,158,11,0.20); }
+.sos-sim-btn.cardiac:hover { background: rgba(245,158,11,0.08); }
+
+/* ─── Tabs ───────────────────────────────────────────────────────── */
+.kaze-tabs { display: flex; gap: 2px; border-top: 1px solid var(--border); }
+.kaze-tab {
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 20px; font-size: 0.8rem; font-weight: 600;
+  color: var(--text-muted); background: transparent;
+  border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; transition: all var(--t-fast) var(--ease);
+  white-space: nowrap;
+}
+.kaze-tab:hover { color: var(--text-secondary); }
+.kaze-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.kaze-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: var(--r-pill); font-size: 0.62rem; font-weight: 800;
+  background: var(--danger); color: #fff;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+.kaze-badge.live {
+  background: var(--accent); animation: none;
+  font-size: 0.58rem; letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+/* ─── Toast ──────────────────────────────────────────────────────── */
+.kaze-toast-wrap { max-width: 1400px; margin: 0 auto; padding: 12px 24px 0; }
+.kaze-toast {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 12px 16px; border-radius: var(--r-md);
+  font-size: 0.82rem; font-weight: 500; border: 1px solid transparent;
+  animation: toastIn 0.3s var(--ease);
+}
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.kaze-toast.success { background: rgba(16,185,129,0.10); color: #6ee7b7; border-color: rgba(16,185,129,0.20); }
+.kaze-toast.error   { background: rgba(239,68,68,0.10); color: #fca5a5; border-color: rgba(239,68,68,0.20); }
+.kaze-toast.info    { background: rgba(59,130,246,0.10); color: #93c5fd; border-color: rgba(59,130,246,0.20); }
+.kaze-toast-close { background: none; border: none; cursor: pointer; color: inherit; opacity: 0.5; font-size: 1rem; }
+.kaze-toast-close:hover { opacity: 1; }
+
+/* ─── Main ───────────────────────────────────────────────────────── */
+.kaze-main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 24px 24px 40px; }
+
+/* ─── Section header ─────────────────────────────────────────────── */
+.kaze-section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.kaze-section-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+.kaze-section-sub   { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
+
+/* ─── Cards ──────────────────────────────────────────────────────── */
+.kaze-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 20px;
+  transition: border-color var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
+}
+.kaze-card:hover { border-color: rgba(255,255,255,0.09); box-shadow: var(--shadow-card); }
+
+/* Incident list item */
+.incident-item {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 14px 16px; cursor: pointer; transition: all var(--t-fast) var(--ease);
+}
+.incident-item:hover { border-color: rgba(59,130,246,0.20); background: var(--bg-card-hover); }
+.incident-item.selected {
+  border-color: var(--accent);
+  background: rgba(59,130,246,0.05);
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.12), var(--shadow-glow-b);
+}
+
+/* Triage badge */
+.triage-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: var(--r-sm);
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.10em; text-transform: uppercase;
+}
+.triage-badge.RESUSCITATION { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+.triage-badge.EMERGENT      { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+.triage-badge.URGENT        { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+
+/* Empty state */
+.empty-state {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 56px 24px; text-align: center;
+}
+.empty-icon {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px; color: var(--text-muted);
+}
+.empty-title { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+.empty-sub   { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; max-width: 320px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+
+/* ─── Candidate hospital cards ───────────────────────────────────── */
+.candidate-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 18px;
+  transition: all var(--t-base) var(--ease);
+}
+.candidate-card:hover { border-color: rgba(255,255,255,0.10); box-shadow: var(--shadow-card); }
+.candidate-card.top-match {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.10), var(--shadow-glow-b);
+}
+
+/* Metric mini cells */
+.metric-cell-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0; }
+@media (max-width: 600px) { .metric-cell-grid { grid-template-columns: repeat(2, 1fr); } }
+.metric-cell {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: 10px 12px;
+}
+.metric-cell-label { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 4px; }
+.metric-cell-value { font-size: 0.82rem; font-weight: 700; font-family: ui-monospace, monospace; color: var(--text-primary); }
+
+/* ─── Reservation status banner ──────────────────────────────────── */
+.reservation-banner {
+  border-radius: var(--r-lg); padding: 16px 18px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; border: 1px solid transparent;
+}
+.reservation-banner.confirmed  { background: rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.20); }
+.reservation-banner.held       { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.20); }
+
+/* ─── Fleet card ─────────────────────────────────────────────────── */
+.fleet-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 18px;
+  transition: border-color var(--t-base);
+}
+.fleet-card:hover { border-color: rgba(255,255,255,0.10); }
+
+/* Fleet status chip */
+.fleet-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: var(--r-sm);
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.fleet-chip.AVAILABLE  { background: rgba(16,185,129,0.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.20); }
+.fleet-chip.DISPATCHED, .fleet-chip.EN_ROUTE { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.20); animation: dotPulse 1.2s ease-in-out infinite; }
+.fleet-chip.OFFLINE    { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* ─── Map placeholder (inside dispatch) ──────────────────────────── */
+.map-container {
+  border-radius: var(--r-lg); overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+/* ─── Auth screen ────────────────────────────────────────────────── */
+.kaze-auth-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-base); padding: 24px; position: relative; overflow: hidden;
+}
+.kaze-auth-glow {
+  position: absolute; width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%);
+  top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none;
+}
+.kaze-auth-box {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 36px; width: min(440px, 100%);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6); position: relative;
+}
+.kaze-auth-title { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 4px; }
+.kaze-auth-sub   { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; }
+
+/* ─── Form ───────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.form-input, .form-select {
+  width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--r-md); color: var(--text-primary); font-size: 0.85rem;
+  padding: 10px 14px; outline: none; transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  font-family: inherit; appearance: none; -webkit-appearance: none;
+}
+.form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.form-input::placeholder { color: var(--text-dim); }
+.form-select option { background: #0c1628; color: var(--text-primary); }
+
+/* Hint box */
+.hint-box {
+  background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.15);
+  border-radius: var(--r-md); padding: 10px 14px;
+  font-size: 0.76rem; color: #93c5fd; line-height: 1.6; margin-bottom: 16px;
+}
+.hint-box strong { font-weight: 700; color: var(--text-primary); font-family: ui-monospace, monospace; }
+
+/* ─── Info cell ──────────────────────────────────────────────────── */
+.info-cell {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: 12px;
+}
+.info-cell-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 4px; }
+.info-cell-value { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+.info-cell-sub   { font-size: 0.68rem; color: var(--text-muted); display: block; margin-top: 2px; }
+
+/* ─── Score badge ────────────────────────────────────────────────── */
+.score-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: var(--r-sm);
+  background: rgba(59,130,246,0.10); color: #60a5fa;
+  border: 1px solid rgba(59,130,246,0.20);
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+/* ─── Live dot ───────────────────────────────────────────────────── */
+.live-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--success); box-shadow: 0 0 6px rgba(16,185,129,0.5);
+  animation: dotPulse 1.4s ease-in-out infinite; flex-shrink: 0;
+}
+
+/* ─── Divider ────────────────────────────────────────────────────── */
+.section-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* ─── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .kaze-header-meta { display: none; }
+  .kaze-main { padding: 16px; }
+  .sos-sim-bar { display: none; }
 }

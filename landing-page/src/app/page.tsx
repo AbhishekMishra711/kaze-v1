@@ -175,6 +175,14 @@ export default function Home() {
                   <div className="metric-label">Availability</div>
                 </div>
               </div>
+
+              {/* Live Interactive SOS Trigger */}
+              <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                <p style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", marginBottom: 12, textAlign: "center" }}>
+                  Interactive Simulator — Live Dispatch Trigger
+                </p>
+                <SOSButton />
+              </div>
             </div>
           </AnimatedSection>
         </section>
@@ -417,19 +425,31 @@ export default function Home() {
               <div className="concurrency-demo" role="table" aria-label="Concurrency lock state table">
                 <div className="concur-row" role="row">
                   <span className="concur-label" role="cell">ICU Bed #7 — NIMHANS</span>
-                  <span className="concur-lock locked" role="cell">🔒 Locked</span>
+                  <span className="concur-lock locked" role="cell">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Locked
+                  </span>
                 </div>
                 <div className="concur-row" role="row">
                   <span className="concur-label" role="cell">ICU Bed #7 — Request #2</span>
-                  <span className="concur-lock pending" role="cell">⏳ Re-routing</span>
+                  <span className="concur-lock pending" role="cell">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Re-routing
+                  </span>
                 </div>
                 <div className="concur-row" role="row">
                   <span className="concur-label" role="cell">ICU Bed #11 — Assigned</span>
-                  <span className="concur-lock locked" role="cell">🔒 Locked</span>
+                  <span className="concur-lock locked" role="cell">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Locked
+                  </span>
                 </div>
                 <div className="concur-row" role="row">
                   <span className="concur-label" role="cell">AMB-07 — Bowring Hospital</span>
-                  <span className="concur-lock released" role="cell">✓ Released</span>
+                  <span className="concur-lock released" role="cell">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }}><polyline points="20 6 9 17 4 12"/></svg>
+                    Released
+                  </span>
                 </div>
               </div>
 

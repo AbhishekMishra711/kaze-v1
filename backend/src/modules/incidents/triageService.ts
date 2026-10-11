@@ -81,13 +81,14 @@ export class TriageService {
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
+        signal: AbortSignal.timeout(3000),
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': env.ANTHROPIC_API_KEY,
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-3-5-haiku-20241022',
           max_tokens: 400,
           temperature: 0.1,
           system: 'Emergency clinical triage. Output ONLY raw JSON. Keep each justification strictly under 8 words. Schema: {"triageLevel":"RESUSCITATION"|"EMERGENT"|"URGENT"|"LESS_URGENT"|"NON_URGENT","requirements":[{"category":"ICU_BED"|"VENTILATOR"|"TRAUMA_BAY"|"OXYGEN_BED"|"PEDIATRIC_ICU"|"GENERAL_BED","quantity":1,"justification":"brief reason"}]}',

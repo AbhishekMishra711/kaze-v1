@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { FleetAmbulanceIcon, TargetPinIcon, PhoneCallIcon } from './Icons';
 
 export interface MapCoordinates {
   lat: number;
@@ -143,8 +144,8 @@ export default function SatelliteTrackingMap({
         html: `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
             <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.4); animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: #dc2626; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); font-size: 16px;">
-              🆘
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: #dc2626; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
           </div>
         `,
@@ -161,8 +162,8 @@ export default function SatelliteTrackingMap({
         const hospitalIcon = L.divIcon({
           className: 'hospital-dest-icon',
           html: `
-            <div style="width: 34px; height: 34px; border-radius: 50%; background: #10b981; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); font-size: 18px;">
-              🏥
+            <div style="width: 34px; height: 34px; border-radius: 50%; background: #10b981; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
             </div>
           `,
           iconSize: [34, 34],
@@ -174,7 +175,7 @@ export default function SatelliteTrackingMap({
           .bindPopup(`<b>Designated ER Facility</b><br/>${hospitalLocation.label || 'Emergency Hospital'}`);
       }
 
-      // 6. Moving Ambulance Marker (Swiggy / Blinkit style with 🚑 emoji)
+      // 6. Moving Ambulance Marker (tactical CAD marker with SVG vehicle)
       const currentIdx = Math.floor(progress * (waypoints.current.length - 1));
       const currentPt = waypoints.current[currentIdx] || [startLat, startLng];
 
@@ -183,8 +184,8 @@ export default function SatelliteTrackingMap({
         html: `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
             <div style="position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(59, 130, 246, 0.45); animation: ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-            <div style="width: 38px; height: 38px; border-radius: 50%; background: #ffffff; border: 3px solid #2563eb; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 12px rgba(0,0,0,0.4); font-size: 20px; transform: scale(1.05);">
-              🚑
+            <div style="width: 38px; height: 38px; border-radius: 50%; background: #0f172a; border: 2.5px solid #38bdf8; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 12px rgba(0,0,0,0.6); transform: scale(1.05);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round"><path d="M10 10H6"/><path d="M8 8v4"/><path d="M19 17h1a1 1 0 0 0 1-1v-3.5a1.5 1.5 0 0 0-.44-1.06L17.5 8.38A2 2 0 0 0 16.09 8H14V5a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h1"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
             </div>
           </div>
         `,
@@ -288,17 +289,17 @@ export default function SatelliteTrackingMap({
           onClick={recenterMap}
           className="bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md text-white text-xs font-semibold px-3 py-2 rounded-xl border border-slate-700 shadow-lg pointer-events-auto transition-colors flex items-center gap-1.5"
         >
-          <span>🎯</span>
+          <TargetPinIcon className="w-3.5 h-3.5 text-blue-400" />
           <span>Recenter Route</span>
         </button>
       </div>
 
-      {/* Bottom Floating Card: Swiggy/Blinkit Delivery Style Status Bar */}
+      {/* Bottom Floating Card: Tactical Dispatch Delivery Status Bar */}
       <div className="absolute bottom-3 left-3 right-3 z-10 bg-slate-950/92 backdrop-blur-md border border-slate-800 rounded-xl p-4 text-white shadow-2xl">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-600/30 border border-blue-400/50 flex items-center justify-center text-xl shadow-inner">
-              🚑
+            <div className="w-10 h-10 rounded-full bg-blue-600/30 border border-blue-400/50 flex items-center justify-center shadow-inner">
+              <FleetAmbulanceIcon className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -309,9 +310,10 @@ export default function SatelliteTrackingMap({
                   {progress >= 0.95 ? 'ARRIVING AT SCENE' : 'EN ROUTE TO PATIENT'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Driver: {ambulance?.driver_name || 'Assigned Paramedic'} • 📞{' '}
-                {ambulance?.driver_phone || '+91 9800000004'}
+              <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+                <span>Driver: {ambulance?.driver_name || 'Assigned Paramedic'} •</span>
+                <PhoneCallIcon className="w-3 h-3 text-slate-400" />
+                <span>{ambulance?.driver_phone || '+91 9800000004'}</span>
               </p>
             </div>
           </div>

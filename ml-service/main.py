@@ -4,24 +4,40 @@ import numpy as np
 import pandas as pd
 import joblib
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from train_model import train_and_save_model
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "forecaster_model.joblib")
 
-# Ensure trained ML model artifact exists
-if not os.path.exists(MODEL_PATH):
-    print("[STARTUP] No model artifact found. Training calibrated gradient boosting pipeline...")
+# Ensure trained ML model artifact exists & is compatible with current environment
+model_pipeline = None
+try:
+    if not os.path.exists(MODEL_PATH):
+        print("[STARTUP] No model artifact found. Training calibrated gradient boosting pipeline...")
+        train_and_save_model(MODEL_PATH)
+    print(f"[STARTUP] Loading trained ML model from: {MODEL_PATH}")
+    model_pipeline = joblib.load(MODEL_PATH)
+    print("[STARTUP] Calibrated ML Model Pipeline loaded successfully into memory!")
+except Exception as e:
+    print(f"[STARTUP] Notice: Model loading issue ({e}). Retraining artifact for current environment...")
     train_and_save_model(MODEL_PATH)
-
-print(f"[STARTUP] Loading trained ML model from: {MODEL_PATH}")
-model_pipeline = joblib.load(MODEL_PATH)
-print("[STARTUP] Calibrated ML Model Pipeline loaded successfully into memory!")
+    model_pipeline = joblib.load(MODEL_PATH)
+    print("[STARTUP] Calibrated ML Model Pipeline retrained and loaded successfully!")
 
 app = FastAPI(
     title="HLTH-02 Real-Time Emergency Resource Allocator - Explainable ML Forecaster",
     version="2.1.0",
     description="Explainable Calibrated HistGradientBoosting model for Resource Availability Probability at ETA"
+)
+
+# Enable CORS for external API calls and dashboards
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 class PredictRequest(BaseModel):
@@ -67,6 +83,14 @@ def build_feature_df(category: str, free_units: int, eta: float, hour: int) -> p
         "is_peak_hours": is_p,
         "demand_pressure_ratio": ratio
     }])
+
+@app.get("/")
+def root():
+    return {
+        "status": "online",
+        "service": "hlth02-forecaster-ml",
+        "endpoints": ["/health", "/predict", "/docs"]
+    }
 
 @app.get("/health")
 def health_check():

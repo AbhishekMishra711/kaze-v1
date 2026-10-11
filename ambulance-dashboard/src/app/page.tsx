@@ -4,11 +4,8 @@ import SatelliteTrackingMap from './components/SatelliteTrackingMap';
 
 const API_BASE = 'http://localhost:4000';
 
-interface UserSession {
-  role: string;
-  username: string;
-  name: string;
-}
+/* ─── Types ──────────────────────────────────────────────────────── */
+interface UserSession { role: string; username: string; name: string; }
 
 interface Incident {
   id: string;
@@ -20,11 +17,7 @@ interface Incident {
   triage_level: string;
   status: string;
   created_at: string;
-  requirements?: Array<{
-    category: string;
-    quantity_needed: number;
-    justification?: string;
-  }>;
+  requirements?: Array<{ category: string; quantity_needed: number; justification?: string }>;
 }
 
 interface HospitalCandidate {
@@ -56,37 +49,137 @@ interface Ambulance {
   status: string;
 }
 
+/* ─── SVG Icons ──────────────────────────────────────────────────── */
+function IconAmbulance({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10 10H6M8 8v4M19 17h1a1 1 0 0 0 1-1v-3.5a1.5 1.5 0 0 0-.44-1.06L17.5 8.38A2 2 0 0 0 16.09 8H14V5a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h1" />
+      <circle cx="7" cy="17" r="2" />
+      <circle cx="17" cy="17" r="2" />
+    </svg>
+  );
+}
+
+function IconAlertTriangle({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+function IconMap({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+      <line x1="9" y1="3" x2="9" y2="18" /><line x1="15" y1="6" x2="15" y2="21" />
+    </svg>
+  );
+}
+
+function IconSignal({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1 6c0 0 4-2 11-2s11 2 11 2" />
+      <path d="M4 11c0 0 3-2 8-2s8 2 8 2" />
+      <path d="M7 16c0 0 2-1 5-1s5 1 5 1" />
+      <circle cx="12" cy="20" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconX({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function IconCheck({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function IconLogout({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
+function IconArrowRight({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+      <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+    </svg>
+  );
+}
+
+function IconHeart({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  );
+}
+
+function IconZap({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
+function IconCross({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" />
+    </svg>
+  );
+}
+
+/* ─── Main component ─────────────────────────────────────────────── */
 export default function AmbulanceAdminDashboard() {
   const [session, setSession] = useState<UserSession | null>(null);
-
-  // Auth state
   const [loginId, setLoginId] = useState('admin');
   const [loginPass, setLoginPass] = useState('admin');
   const [authError, setAuthError] = useState('');
 
-  // Incidents and active workflow state
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [candidates, setCandidates] = useState<HospitalCandidate[]>([]);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [activeReservation, setActiveReservation] = useState<any>(null);
 
-  // Ambulances fleet
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
   const [selectedAmbulanceId, setSelectedAmbulanceId] = useState<string>('');
 
-  // UI Tabs: 'DISPATCH' | 'FLEET' | 'MAP'
   const [activeTab, setActiveTab] = useState<'DISPATCH' | 'FLEET' | 'MAP'>('DISPATCH');
   const [actionMsg, setActionMsg] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  // Restore session
+  // Session restore
   useEffect(() => {
     const saved = localStorage.getItem('kaze_ambulance_admin_session');
-    if (saved) {
-      try {
-        setSession(JSON.parse(saved));
-      } catch (_) {}
-    }
+    if (saved) { try { setSession(JSON.parse(saved)); } catch (_) {} }
   }, []);
 
   const showToast = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -94,7 +187,7 @@ export default function AmbulanceAdminDashboard() {
     setTimeout(() => setActionMsg(null), 5000);
   };
 
-  // Login
+  /* ── Auth ── */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -102,15 +195,15 @@ export default function AmbulanceAdminDashboard() {
       const res = await fetch(`${API_BASE}/api/v1/auth/ambulance/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ admin_id: loginId, password: loginPass })
+        body: JSON.stringify({ admin_id: loginId, password: loginPass }),
       });
       const data = await res.json();
       if (data.success && data.user) {
         setSession(data.user);
         localStorage.setItem('kaze_ambulance_admin_session', JSON.stringify(data.user));
-        showToast('Logged in as Central Ambulance Administrator', 'success');
+        showToast('Authenticated as Central Ambulance Administrator.', 'success');
       } else {
-        setAuthError(data.error || 'Invalid credentials. Use admin / admin');
+        setAuthError(data.error || 'Invalid credentials. Use admin / admin.');
       }
     } catch (err: any) {
       setAuthError(`Connection error: ${err.message}`);
@@ -122,30 +215,27 @@ export default function AmbulanceAdminDashboard() {
     setSession(null);
   };
 
-  // Poll incidents & fleet
+  /* ── Data polling ── */
   const fetchData = async () => {
     if (!session) return;
     try {
-      // 1. Fetch active incidents
-      const incRes = await fetch(`${API_BASE}/api/v1/dispatcher/active-incidents`);
+      const [incRes, ambRes] = await Promise.all([
+        fetch(`${API_BASE}/api/v1/dispatcher/active-incidents`),
+        fetch(`${API_BASE}/api/v1/dispatcher/ambulances`),
+      ]);
+
       if (incRes.ok) {
         const incData = await incRes.json();
         if (incData.success) {
           const list: Incident[] = incData.incidents || [];
           setIncidents(list);
-
-          // If currently selected incident exists, refresh its state
           if (selectedIncident) {
             const updated = list.find(i => i.id === selectedIncident.id);
-            if (updated) {
-              setSelectedIncident(updated);
-            }
+            if (updated) setSelectedIncident(updated);
           }
         }
       }
 
-      // 2. Fetch fleet
-      const ambRes = await fetch(`${API_BASE}/api/v1/dispatcher/ambulances`);
       if (ambRes.ok) {
         const ambData = await ambRes.json();
         if (ambData.success) {
@@ -158,16 +248,11 @@ export default function AmbulanceAdminDashboard() {
         }
       }
 
-      // 3. If an incident is selected, check its reservation details
       if (selectedIncident) {
         const detailRes = await fetch(`${API_BASE}/api/v1/incidents/${selectedIncident.id}`);
         if (detailRes.ok) {
           const detailData = await detailRes.json();
-          if (detailData.success && detailData.activeReservation) {
-            setActiveReservation(detailData.activeReservation);
-          } else {
-            setActiveReservation(null);
-          }
+          setActiveReservation(detailData.success && detailData.activeReservation ? detailData.activeReservation : null);
         }
       }
     } catch (_) {}
@@ -178,9 +263,10 @@ export default function AmbulanceAdminDashboard() {
     fetchData();
     const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, selectedIncident?.id]);
 
-  // Click on an incident -> Fetch automated hospital recommendations
+  /* ── Incident actions ── */
   const handleSelectIncident = async (inc: Incident) => {
     setSelectedIncident(inc);
     setLoadingCandidates(true);
@@ -191,7 +277,7 @@ export default function AmbulanceAdminDashboard() {
       if (data.success && data.recommendations) {
         setCandidates(data.recommendations);
       } else {
-        showToast('Could not fetch hospital candidates', 'error');
+        showToast('Could not fetch hospital candidates.', 'error');
       }
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -200,31 +286,24 @@ export default function AmbulanceAdminDashboard() {
     }
   };
 
-  // Dispatcher requests specific hospital
   const handleRequestHospital = async (cand: HospitalCandidate) => {
     if (!selectedIncident) return;
     try {
       const res = await fetch(`${API_BASE}/api/v1/dispatcher/incidents/${selectedIncident.id}/request-hospital`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hospitalId: cand.hospitalId,
-          ambulanceId: selectedAmbulanceId || undefined
-        })
+        body: JSON.stringify({ hospitalId: cand.hospitalId, ambulanceId: selectedAmbulanceId || undefined }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast(`Request sent to ${cand.name}! Waiting for hospital ER approval...`, 'success');
+        showToast(`Request sent to ${cand.name}. Awaiting ER acceptance...`, 'success');
         fetchData();
       } else {
-        showToast(data.error || 'Failed to request hospital', 'error');
+        showToast(data.error || 'Failed to request hospital.', 'error');
       }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
   };
 
-  // Dispatcher confirms dispatch after hospital accepts
   const handleConfirmDispatch = async () => {
     if (!selectedIncident) return;
     const chosenAmb = ambulances.find(a => a.id === selectedAmbulanceId) || ambulances[0];
@@ -232,390 +311,376 @@ export default function AmbulanceAdminDashboard() {
       const res = await fetch(`${API_BASE}/api/v1/dispatcher/incidents/${selectedIncident.id}/dispatch-ambulance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ambulanceId: chosenAmb?.id,
-          driverName: chosenAmb?.driver_name,
-          driverPhone: chosenAmb?.driver_phone
-        })
+        body: JSON.stringify({ ambulanceId: chosenAmb?.id, driverName: chosenAmb?.driver_name, driverPhone: chosenAmb?.driver_phone }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast(
-          `Ambulance ${chosenAmb?.vehicle_number || ''} dispatched! Tracking & driver contact transmitted to user app.`,
-          'success'
-        );
+        showToast(`Ambulance ${chosenAmb?.vehicle_number || ''} dispatched. Tracking transmitted to patient app.`, 'success');
         fetchData();
       } else {
-        showToast(data.error || 'Failed to dispatch ambulance', 'error');
+        showToast(data.error || 'Failed to dispatch ambulance.', 'error');
       }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
   };
 
-  // Quick Simulation of SOS trigger
   const handleSimulateSOS = async (triageType: 'TRAUMA' | 'CARDIAC' | 'GENERAL') => {
     const descMap = {
-      TRAUMA: 'High-speed motorcycle collision near Akurdi station, rider unconscious with heavy head bleeding.',
+      TRAUMA:  'High-speed motorcycle collision near Akurdi station, rider unconscious with severe head bleeding.',
       CARDIAC: '62-year-old male with acute crushing chest pain, diaphoresis, and severe breathlessness.',
-      GENERAL: 'Worker fallen from scaffolding with severe lower limb fracture and acute pain.'
+      GENERAL: 'Worker fallen from scaffolding with severe lower limb fracture and acute pain.',
     };
     try {
       const res = await fetch(`${API_BASE}/api/v1/incidents/sos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          latitude: 18.6253,
-          longitude: 73.8166,
-          description: descMap[triageType],
-          addressText: 'Akurdi Railway Station Chowk, Pune'
-        })
+          latitude: 18.6253, longitude: 73.8166,
+          description: descMap[triageType], addressText: 'Akurdi Railway Station Chowk, Pune',
+        }),
       });
       const data = await res.json();
       if (data.success && data.incident) {
-        showToast(`New SOS Alert Received from Citizen (${triageType})!`, 'info');
+        showToast(`New SOS alert received (${triageType}). Auto-routed for triage.`, 'info');
         fetchData();
         handleSelectIncident(data.incident);
       }
-    } catch (err: any) {
-      showToast(`Simulate error: ${err.message}`, 'error');
-    }
+    } catch (err: any) { showToast(`Simulation error: ${err.message}`, 'error'); }
   };
 
-  // =========================================================================
-  // VIEW: LOGIN SCREEN
-  // =========================================================================
+  /* ── Derived ── */
+  const triageCls = (level: string) => {
+    if (level === 'RESUSCITATION') return 'RESUSCITATION';
+    if (level === 'EMERGENT') return 'EMERGENT';
+    return 'URGENT';
+  };
+
+  /* ═══════════════════════════════════════════════════
+      AUTH SCREEN
+  ═══════════════════════════════════════════════════ */
   if (!session) {
     return (
-      <main className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex justify-center items-center gap-2 mb-2">
-            <span className="w-4 h-4 rounded-full bg-blue-600 inline-block animate-pulse"></span>
-            <span className="text-xs font-bold tracking-widest text-blue-700 uppercase">Emergency Command Grid</span>
+      <div className="kaze-auth-wrap">
+        <div className="kaze-auth-glow" aria-hidden="true" />
+        <div className="kaze-auth-box">
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+            <div className="kaze-brand-mark" aria-hidden="true">
+              <IconAmbulance size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>KAZE</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'ui-monospace, monospace' }}>Emergency Command Grid</div>
+            </div>
           </div>
-          <h2 className="text-center text-3xl font-extrabold text-slate-900 tracking-tight">
-            Ambulance Admin Console
-          </h2>
-          <p className="mt-2 text-center text-sm text-slate-600">
-            Central Dispatch, Intelligent Nearest Hospital Matching & Fleet Control
+
+          <h1 className="kaze-auth-title">Ambulance Admin Console</h1>
+          <p className="kaze-auth-sub">
+            Central dispatch, intelligent nearest hospital matching, and fleet control for Pune metro emergency services.
           </p>
+
+          {authError && (
+            <div style={{
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)',
+              borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: '0.8rem',
+              color: '#fca5a5', marginBottom: 16,
+            }} role="alert">
+              {authError}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="loginId">Admin User ID</label>
+              <input
+                id="loginId" type="text" required value={loginId}
+                onChange={e => setLoginId(e.target.value)}
+                placeholder="admin"
+                className="form-input"
+                style={{ fontFamily: 'ui-monospace, monospace' }}
+                autoComplete="username"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="loginPass">Password</label>
+              <input
+                id="loginPass" type="password" required value={loginPass}
+                onChange={e => setLoginPass(e.target.value)}
+                placeholder="admin"
+                className="form-input"
+                style={{ fontFamily: 'ui-monospace, monospace' }}
+                autoComplete="current-password"
+              />
+            </div>
+            <div className="hint-box">
+              Credentials pre-filled: ID <strong>admin</strong> / Password <strong>admin</strong>
+            </div>
+            <button
+              type="submit"
+              className="btn btn-accent"
+              style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
+              id="ambulance-login-btn"
+            >
+              Sign In to Central Dispatch
+            </button>
+          </form>
         </div>
-
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-6 shadow-sm border border-slate-200 rounded-xl sm:px-10">
-            {authError && (
-              <div className="mb-4 p-3 rounded-lg text-sm font-medium bg-rose-50 text-rose-700 border border-rose-200">
-                {authError}
-              </div>
-            )}
-
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Admin User ID
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={loginId}
-                  onChange={e => setLoginId(e.target.value)}
-                  placeholder="admin"
-                  className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={loginPass}
-                  onChange={e => setLoginPass(e.target.value)}
-                  placeholder="admin"
-                  className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                />
-              </div>
-
-              <div className="p-3 bg-blue-50/70 border border-blue-200/60 rounded-lg text-xs text-blue-800">
-                💡 Credentials pre-filled: ID <span className="font-mono font-bold">admin</span> / Password{' '}
-                <span className="font-mono font-bold">admin</span>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full mt-2 py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-colors"
-              >
-                Sign In to Central Dispatch
-              </button>
-            </form>
-          </div>
-        </div>
-      </main>
+      </div>
     );
   }
 
-  // =========================================================================
-  // VIEW: MAIN AMBULANCE ADMIN DASHBOARD
-  // =========================================================================
+  /* ═══════════════════════════════════════════════════
+      MAIN DASHBOARD
+  ═══════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
-      {/* Top Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xl shadow-xs">
-                🚑
+    <div className="kaze-app">
+      {/* ── Header ── */}
+      <header className="kaze-header" role="banner">
+        <div className="kaze-header-inner">
+          <div className="kaze-header-row">
+            {/* Brand */}
+            <div className="kaze-brand">
+              <div className="kaze-brand-mark" aria-hidden="true">
+                <IconAmbulance size={18} />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-bold text-slate-900 tracking-tight">
-                    Central Ambulance Dispatch & Matching
-                  </h1>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5 animate-pulse"></span>
-                    ONLINE GRID
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="kaze-brand-name">Central Ambulance Dispatch</span>
+                  <span className="kaze-status-pill online">
+                    <span className="kaze-status-dot pulse" aria-hidden="true" />
+                    Online Grid
                   </span>
                 </div>
-                <div className="text-xs text-slate-500 font-mono">
-                  Operator: {session.name} • Active Fleet: {ambulances.filter(a => a.status === 'AVAILABLE').length} Available
+                <div className="kaze-header-meta">
+                  <span>Operator: {session.name}</span>
+                  <span className="kaze-meta-sep">|</span>
+                  <span>{ambulances.filter(a => a.status === 'AVAILABLE').length} available / {ambulances.length} total fleet</span>
+                  <span className="kaze-meta-sep">|</span>
+                  <span>{incidents.length} active SOS</span>
                 </div>
               </div>
             </div>
 
-            {/* Header Right Actions */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-1 bg-slate-50">
-                <span className="text-[11px] font-bold text-slate-500 px-1.5 uppercase">Test SOS:</span>
+            {/* SOS Simulator + Actions */}
+            <div className="kaze-header-actions">
+              <div className="sos-sim-bar" aria-label="Simulate SOS events">
+                <span className="sos-sim-label">Test SOS</span>
                 <button
                   type="button"
+                  className="sos-sim-btn trauma"
                   onClick={() => handleSimulateSOS('TRAUMA')}
-                  className="px-2 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 rounded text-[11px] font-bold transition-colors"
+                  title="Simulate trauma SOS"
+                  id="sim-trauma-btn"
                 >
-                  🚨 Trauma SOS
+                  Trauma
                 </button>
                 <button
                   type="button"
+                  className="sos-sim-btn cardiac"
                   onClick={() => handleSimulateSOS('CARDIAC')}
-                  className="px-2 py-1 bg-white hover:bg-amber-50 text-amber-700 border border-slate-200 rounded text-[11px] font-bold transition-colors"
+                  title="Simulate cardiac SOS"
+                  id="sim-cardiac-btn"
                 >
-                  🫀 Cardiac SOS
+                  Cardiac
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors ml-2"
-              >
+              <button type="button" onClick={handleLogout} className="btn btn-ghost" id="logout-btn">
+                <IconLogout size={14} />
                 Sign Out
               </button>
             </div>
           </div>
 
-          {/* Navigation Bar */}
-          <div className="flex space-x-8 border-t border-slate-100 -mb-px">
+          {/* Tabs */}
+          <nav className="kaze-tabs" aria-label="Dashboard sections">
             <button
+              className={`kaze-tab ${activeTab === 'DISPATCH' ? 'active' : ''}`}
               onClick={() => setActiveTab('DISPATCH')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-                activeTab === 'DISPATCH'
-                  ? 'border-blue-600 text-blue-700 font-bold'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
+              aria-current={activeTab === 'DISPATCH' ? 'page' : undefined}
+              id="tab-dispatch"
             >
-              <span>🚨 Live SOS & Hospital Matching</span>
+              <IconAlertTriangle size={14} />
+              Live SOS & Hospital Matching
               {incidents.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-rose-600 text-white animate-pulse">
-                  {incidents.length}
-                </span>
+                <span className="kaze-badge" aria-label={`${incidents.length} active`}>{incidents.length}</span>
               )}
             </button>
-
             <button
+              className={`kaze-tab ${activeTab === 'FLEET' ? 'active' : ''}`}
               onClick={() => setActiveTab('FLEET')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-                activeTab === 'FLEET'
-                  ? 'border-blue-600 text-blue-700 font-bold'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
+              aria-current={activeTab === 'FLEET' ? 'page' : undefined}
+              id="tab-fleet"
             >
-              <span>🚑 108 Fleet Status</span>
-              <span className="text-xs text-slate-400 font-normal">({ambulances.length} vehicles)</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('MAP')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-                activeTab === 'MAP'
-                  ? 'border-blue-600 text-blue-700 font-bold'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
-            >
-              <span>🛰️ Satellite Tracking Radar</span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-bold">
-                SWIGGY / BLINKIT
+              <IconAmbulance size={14} />
+              108 Fleet Status
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                ({ambulances.length} vehicles)
               </span>
             </button>
-          </div>
+            <button
+              className={`kaze-tab ${activeTab === 'MAP' ? 'active' : ''}`}
+              onClick={() => setActiveTab('MAP')}
+              aria-current={activeTab === 'MAP' ? 'page' : undefined}
+              id="tab-map"
+            >
+              <IconMap size={14} />
+              Satellite Tracking Radar
+              <span className="kaze-badge live">Live</span>
+            </button>
+          </nav>
         </div>
       </header>
 
-      {/* Toast notifications */}
+      {/* Toast */}
       {actionMsg && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-          <div
-            className={`p-3.5 rounded-lg text-sm font-medium shadow-xs flex justify-between items-center ${
-              actionMsg.type === 'error'
-                ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                : actionMsg.type === 'success'
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-blue-50 text-blue-700 border border-blue-200'
-            }`}
-          >
+        <div className="kaze-toast-wrap" role="alert" aria-live="polite">
+          <div className={`kaze-toast ${actionMsg.type}`}>
             <span>{actionMsg.text}</span>
-            <button onClick={() => setActionMsg(null)} className="text-xs font-bold opacity-60 hover:opacity-100">
-              ✕
+            <button className="kaze-toast-close" onClick={() => setActionMsg(null)} aria-label="Dismiss">
+              <IconX size={14} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Body */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+      {/* ── Main ── */}
+      <main className="kaze-main" id="main-content">
+
+        {/* ═══ TAB 1: DISPATCH ═══ */}
         {activeTab === 'DISPATCH' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left 4 Cols: Live Incoming SOS Requests */}
-            <div className="lg:col-span-4 space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-base font-bold text-slate-900">Incoming SOS Alerts ({incidents.length})</h2>
-                <span className="text-[11px] font-mono text-slate-400">Auto-refresh 3s</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, alignItems: 'start' }}>
+
+            {/* Left: SOS Incident list */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <span className="kaze-section-title" style={{ fontSize: '0.9rem' }}>
+                  Incoming SOS Alerts ({incidents.length})
+                </span>
+                <span style={{ fontSize: '0.65rem', fontFamily: 'ui-monospace, monospace', color: 'var(--text-muted)' }}>
+                  Auto-refresh 3 s
+                </span>
               </div>
 
               {incidents.length === 0 ? (
-                <div className="bg-white border border-slate-200 rounded-xl p-8 text-center shadow-xs">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-lg mb-2">
-                    ✓
+                <div className="empty-state" style={{ padding: 32 }}>
+                  <div className="empty-icon">
+                    <IconCheck size={20} />
                   </div>
-                  <h3 className="text-sm font-semibold text-slate-900">No Active SOS Incidents</h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Emergency alerts from citizens will pop up here in real time.
+                  <h3 className="empty-title">No Active SOS Incidents</h3>
+                  <p className="empty-sub">
+                    Emergency alerts from citizens will appear here in real time.
                   </p>
                   <button
                     type="button"
                     onClick={() => handleSimulateSOS('TRAUMA')}
-                    className="mt-4 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100"
+                    className="btn btn-ghost"
+                    style={{ marginTop: 16, fontSize: '0.72rem' }}
+                    id="trigger-sim-btn"
                   >
-                    + Trigger Simulated Citizen SOS
+                    <IconZap size={12} />
+                    Trigger Simulated SOS
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {incidents.map(inc => {
                     const isSelected = selectedIncident?.id === inc.id;
                     return (
-                      <div
+                      <button
                         key={inc.id}
                         onClick={() => handleSelectIncident(inc)}
-                        className={`p-4 rounded-xl border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-blue-50/50 border-blue-500 shadow-sm'
-                            : 'bg-white border-slate-200 hover:border-slate-300'
-                        }`}
+                        className={`incident-item ${isSelected ? 'selected' : ''}`}
+                        style={{ textAlign: 'left', width: '100%', cursor: 'pointer', background: 'none', border: 'none' }}
+                        id={`incident-${inc.id.slice(0, 8)}`}
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                              inc.triage_level === 'RESUSCITATION'
-                                ? 'bg-rose-100 text-rose-800'
-                                : inc.triage_level === 'EMERGENT'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-blue-100 text-blue-800'
-                            }`}
-                          >
-                            {inc.triage_level}
-                          </span>
-                          <span className="text-[11px] font-mono font-semibold text-slate-500">
-                            #{inc.id.slice(0, 8)}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <span className={`triage-badge ${triageCls(inc.triage_level)}`}>{inc.triage_level}</span>
+                          <span style={{ fontSize: '0.62rem', fontFamily: 'ui-monospace, monospace', color: 'var(--text-muted)' }}>
+                            #{inc.id.slice(0, 8).toUpperCase()}
                           </span>
                         </div>
-
-                        <p className="text-xs text-slate-800 font-medium line-clamp-2">
-                          &quot;{inc.description_raw || 'Emergency SOS trigger'}&quot;
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 8,
+                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                        }}>
+                          &ldquo;{inc.description_raw || 'Emergency SOS trigger'}&rdquo;
                         </p>
-
-                        <div className="mt-3 flex justify-between items-center text-[11px] text-slate-500 border-t border-slate-100 pt-2">
-                          <span className="font-semibold text-blue-700">Status: {inc.status}</span>
-                          <span>{new Date(inc.created_at).toLocaleTimeString()}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                          <span style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 600 }}>
+                            {inc.status}
+                          </span>
+                          <span style={{ color: 'var(--text-muted)' }}>{new Date(inc.created_at).toLocaleTimeString()}</span>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
               )}
             </div>
 
-            {/* Right 8 Cols: Selected Incident & Automated Hospital Matcher */}
-            <div className="lg:col-span-8">
+            {/* Right: Selected incident detail + hospital matching */}
+            <div>
               {!selectedIncident ? (
-                <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-xs">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-xl mb-3">
-                    👈
+                <div className="empty-state">
+                  <div className="empty-icon">
+                    <IconMap size={22} />
                   </div>
-                  <h3 className="text-base font-bold text-slate-900">Select an SOS Request</h3>
-                  <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                    Click any incoming incident from the left panel to trigger automated nearest hospital calculation,
-                    availability forecasting, and dispatch coordination.
+                  <h3 className="empty-title">Select an SOS Request</h3>
+                  <p className="empty-sub">
+                    Click any incoming incident from the left panel to trigger automated nearest hospital calculation, availability forecasting, and dispatch coordination.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {/* Incident Detail Card */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-                    <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                  {/* Incident detail card */}
+                  <div className="kaze-card" style={{ padding: 20 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${
-                              selectedIncident.triage_level === 'RESUSCITATION'
-                                ? 'bg-rose-100 text-rose-800'
-                                : selectedIncident.triage_level === 'EMERGENT'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-blue-100 text-blue-800'
-                            }`}
-                          >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                          <span className={`triage-badge ${triageCls(selectedIncident.triage_level)}`}>
                             {selectedIncident.triage_level}
                           </span>
-                          <h3 className="text-sm font-bold text-slate-900">
-                            Incident #{selectedIncident.id}
+                          <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'ui-monospace, monospace' }}>
+                            #{selectedIncident.id.slice(0, 8).toUpperCase()}
                           </h3>
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Location: {selectedIncident.latitude.toFixed(4)}, {selectedIncident.longitude.toFixed(4)} •{' '}
-                          {selectedIncident.address_text || 'Pune Metro Area'}
+                        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                          {selectedIncident.latitude.toFixed(4)}, {selectedIncident.longitude.toFixed(4)}{' '}
+                          &mdash; {selectedIncident.address_text || 'Pune Metro Area'}
                         </p>
                       </div>
-
-                      {/* Status Tag */}
-                      <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 font-mono">
-                        Status: {selectedIncident.status}
+                      <span style={{
+                        fontSize: '0.65rem', fontFamily: 'ui-monospace, monospace', fontWeight: 700,
+                        color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '4px 8px',
+                      }}>
+                        {selectedIncident.status}
                       </span>
                     </div>
 
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-800">
-                      <span className="font-bold block text-slate-600 mb-0.5">Reported Condition:</span>
-                      &quot;{selectedIncident.description_raw || 'Emergency SOS trigger'}&quot;
+                    <div style={{
+                      background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)',
+                      borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: '0.78rem',
+                      color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 14,
+                    }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 2, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Reported Condition
+                      </span>
+                      &ldquo;{selectedIncident.description_raw || 'Emergency SOS trigger'}&rdquo;
                     </div>
 
-                    {/* Ambulance fleet selector */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs font-bold text-slate-700">Assign 108 Ambulance:</label>
+                    {/* Ambulance selector + dispatch button */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
+                          htmlFor="amb-select">
+                          Assign 108 Unit:
+                        </label>
                         <select
+                          id="amb-select"
                           value={selectedAmbulanceId}
                           onChange={e => setSelectedAmbulanceId(e.target.value)}
-                          className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="form-select"
+                          style={{ width: 'auto', padding: '6px 12px', fontSize: '0.75rem', fontFamily: 'ui-monospace, monospace' }}
                         >
                           {ambulances.map(a => (
                             <option key={a.id} value={a.id}>
@@ -625,67 +690,62 @@ export default function AmbulanceAdminDashboard() {
                         </select>
                       </div>
 
-                      {/* If Hospital Accepted -> Show Dispatch Ambulance Action */}
                       {activeReservation?.status === 'CONFIRMED' && selectedIncident.status !== 'EN_ROUTE' && (
                         <button
                           type="button"
                           onClick={handleConfirmDispatch}
-                          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1.5 animate-bounce"
+                          className="btn btn-success"
+                          style={{ animation: 'dotPulse 1.5s ease-in-out infinite' }}
+                          id="confirm-dispatch-btn"
                         >
-                          <span>🚑 Confirm Ambulance Dispatched to Location</span>
+                          <IconAmbulance size={14} />
+                          Confirm Ambulance Dispatched
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Active Reservation Status Banner (If request already placed) */}
+                  {/* Reservation status banner */}
                   {activeReservation && (
-                    <div
-                      className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
-                        activeReservation.status === 'CONFIRMED'
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                          : activeReservation.status === 'HELD'
-                          ? 'bg-amber-50 border-amber-300 text-amber-900'
-                          : 'bg-slate-50 border-slate-200 text-slate-800'
-                      }`}
-                    >
+                    <div className={`reservation-banner ${activeReservation.status === 'CONFIRMED' ? 'confirmed' : 'held'}`}>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-current animate-ping"></span>
-                          <span className="text-xs font-bold uppercase tracking-wider">
-                            {activeReservation.status === 'CONFIRMED'
-                              ? 'REQUEST ACCEPTED BY HOSPITAL'
-                              : 'PENDING HOSPITAL ER ACCEPTANCE'}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <span className="live-dot" aria-hidden="true" />
+                          <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+                            color: activeReservation.status === 'CONFIRMED' ? 'var(--success)' : 'var(--warning)' }}>
+                            {activeReservation.status === 'CONFIRMED' ? 'Request Accepted by Hospital' : 'Pending Hospital ER Acceptance'}
                           </span>
                         </div>
-                        <p className="text-sm font-bold mt-1">
-                          Hospital: {activeReservation.hospital_name || 'Designated Facility'}
+                        <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          {activeReservation.hospital_name || 'Designated Facility'}
                         </p>
-                        <p className="text-xs opacity-80 mt-0.5">
-                          Ambulance: {activeReservation.vehicle_number || '108 Fleet'} • Driver:{' '}
-                          {activeReservation.driver_name || 'Paramedic Staff'} (
-                          {activeReservation.driver_phone || 'Available'})
+                        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                          {activeReservation.vehicle_number || '108 Fleet'} &mdash; {activeReservation.driver_name || 'Paramedic'} ({activeReservation.driver_phone || 'Available'})
                         </p>
                       </div>
-
                       {activeReservation.status === 'CONFIRMED' && (
-                        <div className="text-right">
-                          <span className="inline-block px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg">
-                            ✓ Bed Confirmed at ER
-                          </span>
-                        </div>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          padding: '6px 12px', background: 'rgba(16,185,129,0.12)',
+                          border: '1px solid rgba(16,185,129,0.25)', borderRadius: 'var(--r-md)',
+                          fontSize: '0.72rem', fontWeight: 700, color: 'var(--success)',
+                        }}>
+                          <IconCheck size={12} />
+                          Bed Confirmed at ER
+                        </span>
                       )}
                     </div>
                   )}
 
-                  {/* Live Satellite Dispatch Radar (Swiggy / Blinkit style movement) */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                        <span>🛰️ Live Satellite Route Radar (Swiggy / Blinkit Movement)</span>
-                      </h4>
-                      <span className="text-[11px] text-slate-500 font-mono">
-                        Bounded to Pune Metro • Esri Optical Earth Imagery
+                  {/* Satellite map */}
+                  <div className="map-container">
+                    <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <IconSignal size={13} />
+                        Live Satellite Route Radar — Pune Metro
+                      </span>
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'ui-monospace, monospace' }}>
+                        Esri Optical Imagery
                       </span>
                     </div>
                     <SatelliteTrackingMap
@@ -695,7 +755,7 @@ export default function AmbulanceAdminDashboard() {
                         label: selectedIncident.address_text || 'Emergency Location',
                       }}
                       ambulance={
-                        ambulances.find((a) => a.id === selectedAmbulanceId) ||
+                        ambulances.find(a => a.id === selectedAmbulanceId) ||
                         ambulances[0] || {
                           vehicle_number: 'MH-12-EM-1081',
                           driver_name: 'Santosh Pawar',
@@ -706,120 +766,98 @@ export default function AmbulanceAdminDashboard() {
                       }
                       hospitalLocation={
                         activeReservation
-                          ? {
-                              lat: activeReservation.hospital_lat || 18.6253,
-                              lng: activeReservation.hospital_lng || 73.8166,
-                              label: activeReservation.hospital_name || 'Designated Hospital',
-                            }
+                          ? { lat: activeReservation.hospital_lat || 18.6253, lng: activeReservation.hospital_lng || 73.8166, label: activeReservation.hospital_name || 'Designated Hospital' }
                           : null
                       }
-                      isDispatched={Boolean(
-                        activeReservation?.status === 'CONFIRMED' || selectedIncident.status === 'EN_ROUTE'
-                      )}
+                      isDispatched={Boolean(activeReservation?.status === 'CONFIRMED' || selectedIncident.status === 'EN_ROUTE')}
                     />
                   </div>
 
-                  {/* Automated Nearest Hospital Calculation & Matching */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
+                  {/* Hospital matching */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                       <div>
-                        <h3 className="text-sm font-bold text-slate-900">
-                          Automated Nearest Hospital Calculation & Availability Matcher
+                        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          Automated Hospital Availability Matcher
                         </h3>
-                        <p className="text-xs text-slate-500">
-                          Ranked by ML-calibrated arrival availability P(available at ETA), travel time, and data freshness.
+                        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                          Ranked by ML-calibrated arrival availability P(available@ETA), travel time, and data freshness.
                         </p>
                       </div>
                       {loadingCandidates && (
-                        <span className="text-xs text-blue-600 font-semibold animate-pulse">
+                        <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600, animation: 'dotPulse 1s ease-in-out infinite' }}>
                           Evaluating network...
                         </span>
                       )}
                     </div>
 
-                    <div className="space-y-3">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {candidates.map((cand, idx) => {
                         const isTop = idx === 0;
                         return (
-                          <div
-                            key={cand.hospitalId}
-                            className={`bg-white border rounded-xl p-4 transition-all shadow-xs ${
-                              isTop
-                                ? 'border-blue-500 ring-1 ring-blue-500/30'
-                                : 'border-slate-200 hover:border-slate-300'
-                            }`}
-                          >
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                          <article key={cand.hospitalId} className={`candidate-card ${isTop ? 'top-match' : ''}`}
+                            aria-label={`Hospital candidate: ${cand.name}`}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
                               <div>
-                                <div className="flex items-center gap-2">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                   {isTop && (
-                                    <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-[10px] font-extrabold uppercase">
-                                      #1 TOP MATCH
+                                    <span style={{
+                                      padding: '2px 7px', background: 'var(--accent)', color: '#fff',
+                                      borderRadius: 'var(--r-sm)', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                    }}>
+                                      #1 Match
                                     </span>
                                   )}
-                                  <h4 className="text-sm font-bold text-slate-900">{cand.name}</h4>
+                                  <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>{cand.name}</h4>
                                 </div>
-                                <span className="text-xs text-slate-500 block mt-0.5">
-                                  📞 {cand.contactPhone} • GPS: {cand.latitude.toFixed(4)}, {cand.longitude.toFixed(4)}
+                                <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                                  {cand.contactPhone} &mdash; {cand.latitude.toFixed(4)}, {cand.longitude.toFixed(4)}
+                                </p>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.72rem', fontFamily: 'ui-monospace, monospace', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>
+                                  Score: {cand.compositeScore}
                                 </span>
-                              </div>
-
-                              <div className="flex items-center gap-2 text-right">
-                                <div>
-                                  <span className="text-xs font-mono font-bold text-slate-800">
-                                    Score: {cand.compositeScore}
-                                  </span>
-                                  <span className="text-[11px] text-slate-400 block font-mono">
-                                    P(avail): {cand.pAvailablePercent}%
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Metric Badges */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-xs font-mono">
-                              <div className="bg-slate-50 p-2 rounded border border-slate-200">
-                                <span className="text-[10px] text-slate-400 block">EST. TRAVEL</span>
-                                <span className="font-bold text-slate-800">
-                                  {cand.travelMinutes} mins ({cand.distanceKm} km)
-                                </span>
-                              </div>
-                              <div className="bg-slate-50 p-2 rounded border border-slate-200">
-                                <span className="text-[10px] text-slate-400 block">FREE UNITS</span>
-                                <span className="font-bold text-emerald-700">
-                                  {cand.freePrimaryCount} available
-                                </span>
-                              </div>
-                              <div className="bg-slate-50 p-2 rounded border border-slate-200">
-                                <span className="text-[10px] text-slate-400 block">ML AVAILABILITY</span>
-                                <span className="font-bold text-blue-700">
-                                  {cand.pAvailablePercent}% confidence
-                                </span>
-                              </div>
-                              <div className="bg-slate-50 p-2 rounded border border-slate-200">
-                                <span className="text-[10px] text-slate-400 block">DATA FRESHNESS</span>
-                                <span
-                                  className={`font-bold ${
-                                    cand.isStale ? 'text-amber-700' : 'text-slate-700'
-                                  }`}
-                                >
-                                  {cand.isStale ? `Stale (${cand.minutesSinceReport}m)` : 'Live & Verified'}
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'ui-monospace, monospace' }}>
+                                  P(avail): {cand.pAvailablePercent}%
                                 </span>
                               </div>
                             </div>
 
-                            {/* Action to Request */}
-                            <div className="flex justify-end pt-2 border-t border-slate-100">
+                            <div className="metric-cell-grid">
+                              <div className="metric-cell">
+                                <span className="metric-cell-label">Est. Travel</span>
+                                <span className="metric-cell-value">{cand.travelMinutes} min ({cand.distanceKm} km)</span>
+                              </div>
+                              <div className="metric-cell">
+                                <span className="metric-cell-label">Free Units</span>
+                                <span className="metric-cell-value" style={{ color: 'var(--success)' }}>{cand.freePrimaryCount} available</span>
+                              </div>
+                              <div className="metric-cell">
+                                <span className="metric-cell-label">ML Availability</span>
+                                <span className="metric-cell-value" style={{ color: 'var(--accent)' }}>{cand.pAvailablePercent}% confidence</span>
+                              </div>
+                              <div className="metric-cell">
+                                <span className="metric-cell-label">Data Freshness</span>
+                                <span className="metric-cell-value" style={{ color: cand.isStale ? 'var(--warning)' : 'var(--success)' }}>
+                                  {cand.isStale ? `Stale (${cand.minutesSinceReport}m)` : 'Live / Verified'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
                               <button
                                 type="button"
                                 onClick={() => handleRequestHospital(cand)}
-                                className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-1.5"
+                                className="btn btn-accent"
+                                style={{ fontSize: '0.74rem' }}
+                                id={`request-hosp-${cand.hospitalId.slice(0, 8)}`}
                               >
-                                <span>Send Request to {cand.name.split(' ')[0]} ER</span>
-                                <span>→</span>
+                                Send Request to {cand.name.split(' ')[0]} ER
+                                <IconArrowRight size={12} />
                               </button>
                             </div>
-                          </div>
+                          </article>
                         );
                       })}
                     </div>
@@ -830,129 +868,122 @@ export default function AmbulanceAdminDashboard() {
           </div>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB 2: 108 AMBULANCE FLEET OVERVIEW                               */}
-        {/* ================================================================= */}
+        {/* ═══ TAB 2: FLEET STATUS ═══ */}
         {activeTab === 'FLEET' && (
-          <section className="space-y-4">
-            <div className="flex justify-between items-center">
+          <section aria-labelledby="fleet-heading">
+            <div className="kaze-section-header">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Pune 108 Emergency Fleet Status</h2>
-                <p className="text-xs text-slate-500">
+                <h2 className="kaze-section-title" id="fleet-heading">Pune 108 Emergency Fleet</h2>
+                <p className="kaze-section-sub">
                   Real-time telemetry, driver contacts, and trip statuses for active emergency vehicles.
                 </p>
               </div>
-              <span className="text-xs bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-mono">
+              <span style={{
+                fontSize: '0.72rem', fontFamily: 'ui-monospace, monospace',
+                background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
+                borderRadius: 'var(--r-sm)', padding: '5px 12px', color: 'var(--text-muted)',
+              }}>
                 {ambulances.filter(a => a.status === 'AVAILABLE').length} Available / {ambulances.length} Total
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
               {ambulances.map(amb => (
-                <div key={amb.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-base font-extrabold text-slate-900 font-mono">
+                <article key={amb.id} className="fleet-card" aria-label={`Ambulance ${amb.vehicle_number}`}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, fontFamily: 'ui-monospace, monospace', color: 'var(--text-primary)' }}>
                       {amb.vehicle_number}
                     </span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                        amb.status === 'AVAILABLE'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : amb.status === 'DISPATCHED' || amb.status === 'EN_ROUTE'
-                          ? 'bg-amber-100 text-amber-800 animate-pulse'
-                          : 'bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      {amb.status}
-                    </span>
+                    <span className={`fleet-chip ${amb.status}`}>{amb.status}</span>
                   </div>
-
-                  <div className="space-y-1 text-xs text-slate-600 font-medium">
-                    <p>Driver: {amb.driver_name || 'Emergency Responder'}</p>
-                    <p className="text-emerald-700 font-bold">📞 {amb.driver_phone || '+91 9800000004'}</p>
-                    <p className="font-mono text-[11px] text-slate-400">
-                      GPS: {amb.current_lat.toFixed(4)}, {amb.current_lng.toFixed(4)}
-                    </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', minWidth: 52 }}>Driver</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{amb.driver_name || 'Emergency Responder'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', minWidth: 52 }}>Contact</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--success)', fontWeight: 600 }}>{amb.driver_phone || '+91 98XXXXXXXXX'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', minWidth: 52 }}>GPS</span>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'ui-monospace, monospace' }}>
+                        {amb.current_lat.toFixed(4)}, {amb.current_lng.toFixed(4)}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </section>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB 3: SATELLITE TRACKING RADAR (SWIGGY / BLINKIT STYLE)           */}
-        {/* ================================================================= */}
+        {/* ═══ TAB 3: SATELLITE TRACKING MAP ═══ */}
         {activeTab === 'MAP' && (
-          <section className="space-y-4">
-            <div className="flex flex-wrap justify-between items-center gap-2">
+          <section aria-labelledby="map-heading">
+            <div className="kaze-section-header">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Pune Metro Satellite Tracking Grid</h2>
-                <p className="text-xs text-slate-500">
-                  Real photographic Earth optical map • Simulated real-time ambulance transit with 🚑 emoji • Hard-bounded to Pune metropolitan coordinates
+                <h2 className="kaze-section-title" id="map-heading">Pune Metro Satellite Tracking Grid</h2>
+                <p className="kaze-section-sub">
+                  Live optical Earth imagery with real-time ambulance transit tracking. Bounded to Pune metropolitan coordinates.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-mono">
-                  Bounds: 18.35°N - 18.82°N, 73.65°E - 74.15°E
-                </span>
-              </div>
+              <span style={{
+                fontSize: '0.65rem', fontFamily: 'ui-monospace, monospace',
+                background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
+                borderRadius: 'var(--r-sm)', padding: '4px 10px', color: 'var(--text-muted)',
+              }}>
+                Bounds: 18.35°N–18.82°N, 73.65°E–74.15°E
+              </span>
             </div>
 
-            {/* Incident Quick Selector if multiple incidents exist */}
+            {/* Incident picker */}
             {incidents.length > 0 && (
-              <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-wrap items-center gap-3">
-                <span className="text-xs font-bold text-slate-700">Track Incident:</span>
-                <div className="flex flex-wrap gap-2">
-                  {incidents.map((inc) => (
-                    <button
-                      key={inc.id}
-                      onClick={() => handleSelectIncident(inc)}
-                      className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-colors ${
-                        selectedIncident?.id === inc.id
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      #{inc.id.slice(0, 8)} ({inc.triage_level})
-                    </button>
-                  ))}
+              <div className="kaze-card" style={{ marginBottom: 16, padding: '12px 16px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>Track Incident:</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {incidents.map(inc => (
+                      <button
+                        key={inc.id}
+                        onClick={() => handleSelectIncident(inc)}
+                        className={`btn ${selectedIncident?.id === inc.id ? 'btn-accent' : 'btn-ghost'}`}
+                        style={{ fontSize: '0.7rem', padding: '5px 10px', fontFamily: 'ui-monospace, monospace' }}
+                        id={`map-track-${inc.id.slice(0, 8)}`}
+                      >
+                        #{inc.id.slice(0, 8)} ({inc.triage_level})
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Satellite Map Component */}
-            <SatelliteTrackingMap
-              patientLocation={{
-                lat: selectedIncident?.latitude || 18.6253,
-                lng: selectedIncident?.longitude || 73.8166,
-                label: selectedIncident?.address_text || 'Akurdi Railway Station Chowk, Pune',
-              }}
-              ambulance={
-                ambulances.find((a) => a.id === selectedAmbulanceId) ||
-                ambulances[0] || {
-                  vehicle_number: 'MH-12-EM-1081',
-                  driver_name: 'Santosh Pawar',
-                  driver_phone: '+91 98230 10801',
-                  current_lat: 18.638,
-                  current_lng: 73.792,
+            <div className="map-container">
+              <SatelliteTrackingMap
+                patientLocation={{
+                  lat: selectedIncident?.latitude || 18.6253,
+                  lng: selectedIncident?.longitude || 73.8166,
+                  label: selectedIncident?.address_text || 'Akurdi Railway Station Chowk, Pune',
+                }}
+                ambulance={
+                  ambulances.find(a => a.id === selectedAmbulanceId) ||
+                  ambulances[0] || {
+                    vehicle_number: 'MH-12-EM-1081',
+                    driver_name: 'Santosh Pawar',
+                    driver_phone: '+91 98230 10801',
+                    current_lat: 18.638,
+                    current_lng: 73.792,
+                  }
                 }
-              }
-              hospitalLocation={
-                activeReservation
-                  ? {
-                      lat: activeReservation.hospital_lat || 18.6253,
-                      lng: activeReservation.hospital_lng || 73.8166,
-                      label: activeReservation.hospital_name || 'Designated Hospital',
-                    }
-                  : {
-                      lat: 18.6253,
-                      lng: 73.8166,
-                      label: 'Dr. D.Y. Patil Medical College & Hospital',
-                    }
-              }
-              isDispatched={true}
-            />
+                hospitalLocation={
+                  activeReservation
+                    ? { lat: activeReservation.hospital_lat || 18.6253, lng: activeReservation.hospital_lng || 73.8166, label: activeReservation.hospital_name || 'Designated Hospital' }
+                    : { lat: 18.6253, lng: 73.8166, label: 'Dr. D.Y. Patil Medical College & Hospital' }
+                }
+                isDispatched={true}
+              />
+            </div>
           </section>
         )}
       </main>

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const API_BASE = 'http://localhost:4000';
 
+/* ─── Types ──────────────────────────────────────────────────────── */
 interface HospitalData {
   id: string;
   name: string;
@@ -59,15 +60,169 @@ interface ResourceUnit {
   updated_at: string;
 }
 
+/* ─── SVG Icons ──────────────────────────────────────────────────── */
+function IconCross({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" />
+    </svg>
+  );
+}
+
+function IconPulse({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  );
+}
+
+function IconBed({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 4v16M2 8h20a2 2 0 0 1 2 2v10" />
+      <path d="M2 17h20" />
+      <path d="M6 8v9" />
+    </svg>
+  );
+}
+
+function IconLung({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6.081 20C6.786 19.178 8 17 8 14v-3H4a2 2 0 0 0-2 2v3c0 2.21 1.79 4 4 4z" />
+      <path d="M17.919 20C17.214 19.178 16 17 16 14v-3h4a2 2 0 0 1 2 2v3c0 2.21-1.79 4-4 4z" />
+      <path d="M12 2v13" />
+      <path d="M8 11V9a4 4 0 0 1 8 0v2" />
+    </svg>
+  );
+}
+
+function IconAlert({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+function IconWind({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+    </svg>
+  );
+}
+
+function IconChild({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="4" r="2" />
+      <path d="M15 8H9l-2 8h10L15 8z" />
+      <path d="M12 16v6" />
+    </svg>
+  );
+}
+
+function IconHospital({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 10h6M12 7v6" />
+    </svg>
+  );
+}
+
+function IconSatellite({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M13 7l4 4-9 9-4-4 9-9z" />
+      <path d="M19 11l2-2a3 3 0 0 0-4.24-4.24L15 7" />
+      <path d="M5 13l-2 2a3 3 0 0 0 4.24 4.24L9 17" />
+      <circle cx="12" cy="12" r="1" />
+    </svg>
+  );
+}
+
+function IconLogout({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
+function IconCheck({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function IconX({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function IconPlus({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+/* ─── Resource category config ───────────────────────────────────── */
+const RESOURCE_CATS = [
+  { key: 'ICU_BED',      label: 'ICU Beds',         desc: 'Critical care monitoring',     Icon: IconBed },
+  { key: 'VENTILATOR',   label: 'Ventilators',       desc: 'Invasive / non-invasive',      Icon: IconLung },
+  { key: 'TRAUMA_BAY',   label: 'Trauma Bays',       desc: 'High-acuity resuscitation',    Icon: IconAlert },
+  { key: 'OXYGEN_BED',   label: 'Oxygen Beds',       desc: 'High-flow O2 support',          Icon: IconWind },
+  { key: 'PEDIATRIC_ICU', label: 'Pediatric ICU',    desc: 'Neonatal & child intensive',   Icon: IconChild },
+  { key: 'GENERAL_BED',  label: 'General Ward',      desc: 'Acute clinical observation',   Icon: IconHospital },
+];
+
+const DEMO_ACCOUNTS = [
+  { name: 'Dr. D.Y. Patil Medical', admin_id: 'dy_patil@admin', pass: 'password123' },
+  { name: 'Aditya Birla Memorial',  admin_id: 'aditya_birla@admin', pass: 'password123' },
+  { name: 'YCM Hospital',           admin_id: 'ycm@admin', pass: 'password123' },
+  { name: 'Manipal Baner',          admin_id: 'manipal@admin', pass: 'password123' },
+  { name: 'Ruby Hall Clinic',       admin_id: 'ruby_hall@admin', pass: 'password123' },
+  { name: 'Sassoon General',        admin_id: 'sassoon@admin', pass: 'password123' },
+];
+
+/* ─── Main component ─────────────────────────────────────────────── */
 export default function HospitalDashboard() {
   const [hospital, setHospital] = useState<HospitalData | null>(null);
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
 
-  // Login form state
+  // Login form
   const [loginAdminId, setLoginAdminId] = useState('dy_patil@admin');
   const [loginPassword, setLoginPassword] = useState('password123');
 
-  // Register form state
+  // Register form
   const [regName, setRegName] = useState('');
   const [regAdminId, setRegAdminId] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -75,10 +230,10 @@ export default function HospitalDashboard() {
   const [regLng, setRegLng] = useState('73.8166');
   const [regPhone, setRegPhone] = useState('020-27805100');
 
-  // Active Tab: 'REQUESTS' | 'RESOURCES' | 'HANDOVER'
+  // Tab
   const [activeTab, setActiveTab] = useState<'REQUESTS' | 'RESOURCES' | 'HANDOVER'>('REQUESTS');
 
-  // Data states
+  // Data
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [resourceUnits, setResourceUnits] = useState<ResourceUnit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,13 +245,11 @@ export default function HospitalDashboard() {
   const [newCount, setNewCount] = useState(2);
   const [newIsMovable, setNewIsMovable] = useState(false);
 
-  // Restore session
+  // Session restore
   useEffect(() => {
     const saved = localStorage.getItem('kaze_hospital_session');
     if (saved) {
-      try {
-        setHospital(JSON.parse(saved));
-      } catch (_) {}
+      try { setHospital(JSON.parse(saved)); } catch (_) {}
     }
   }, []);
 
@@ -105,7 +258,7 @@ export default function HospitalDashboard() {
     setTimeout(() => setActionMsg(null), 5000);
   };
 
-  // Login
+  /* ── Auth ── */
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setLoading(true);
@@ -113,7 +266,7 @@ export default function HospitalDashboard() {
       const res = await fetch(`${API_BASE}/api/v1/auth/hospital/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ admin_id: loginAdminId, password: loginPassword })
+        body: JSON.stringify({ admin_id: loginAdminId, password: loginPassword }),
       });
       const data = await res.json();
       if (data.success && data.hospital) {
@@ -121,7 +274,7 @@ export default function HospitalDashboard() {
         localStorage.setItem('kaze_hospital_session', JSON.stringify(data.hospital));
         showToast(`Welcome back, ${data.hospital.name}`, 'success');
       } else {
-        showToast(data.error || 'Login failed. Check your credentials.', 'error');
+        showToast(data.error || 'Login failed. Check credentials.', 'error');
       }
     } catch (err: any) {
       showToast(`Network error: ${err.message}`, 'error');
@@ -130,11 +283,10 @@ export default function HospitalDashboard() {
     }
   };
 
-  // Register
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regName || !regAdminId || !regPassword) {
-      showToast('Please fill all required fields.', 'error');
+      showToast('Fill all required fields.', 'error');
       return;
     }
     setLoading(true);
@@ -143,19 +295,16 @@ export default function HospitalDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: regName,
-          admin_id: regAdminId,
-          password: regPassword,
-          latitude: parseFloat(regLat),
-          longitude: parseFloat(regLng),
-          contact_phone: regPhone
-        })
+          name: regName, admin_id: regAdminId, password: regPassword,
+          latitude: parseFloat(regLat), longitude: parseFloat(regLng),
+          contact_phone: regPhone,
+        }),
       });
       const data = await res.json();
       if (data.success && data.hospital) {
         setHospital(data.hospital);
         localStorage.setItem('kaze_hospital_session', JSON.stringify(data.hospital));
-        showToast(`Hospital "${data.hospital.name}" registered and 24 units initialized!`, 'success');
+        showToast(`"${data.hospital.name}" registered — 24 units initialized.`, 'success');
       } else {
         showToast(data.error || 'Registration failed.', 'error');
       }
@@ -171,35 +320,26 @@ export default function HospitalDashboard() {
     setHospital(null);
   };
 
-  // Poll hospital reservations and profile
+  /* ── Data polling ── */
   const fetchHospitalData = async () => {
     if (!hospital?.id) return;
     try {
-      // 1. Fetch profile & capacity
-      const hRes = await fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}`);
+      const [hRes, rRes, uRes] = await Promise.all([
+        fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}`),
+        fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}/reservations`),
+        fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}/resources`),
+      ]);
       if (hRes.ok) {
         const hJson = await hRes.json();
-        if (hJson.success && hJson.hospital) {
-          setHospital(prev => ({ ...prev!, ...hJson.hospital }));
-        }
+        if (hJson.success && hJson.hospital) setHospital(prev => ({ ...prev!, ...hJson.hospital }));
       }
-
-      // 2. Fetch reservations
-      const rRes = await fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}/reservations`);
       if (rRes.ok) {
         const rJson = await rRes.json();
-        if (rJson.success) {
-          setReservations(rJson.reservations || []);
-        }
+        if (rJson.success) setReservations(rJson.reservations || []);
       }
-
-      // 3. Fetch discrete units
-      const uRes = await fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}/resources`);
       if (uRes.ok) {
         const uJson = await uRes.json();
-        if (uJson.success) {
-          setResourceUnits(uJson.resources || []);
-        }
+        if (uJson.success) setResourceUnits(uJson.resources || []);
       }
     } catch (_) {}
   };
@@ -209,9 +349,10 @@ export default function HospitalDashboard() {
     fetchHospitalData();
     const interval = setInterval(fetchHospitalData, 3500);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hospital?.id]);
 
-  // Toggle Hospital Active/Shutdown
+  /* ── Actions ── */
   const toggleHospitalStatus = async () => {
     if (!hospital?.id) return;
     const newStatus = !hospital.is_active;
@@ -219,120 +360,99 @@ export default function HospitalDashboard() {
       const res = await fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          isActive: newStatus,
-          reason: newStatus ? 'ER_REOPENED' : 'TEMPORARY_ER_DIVERSION'
-        })
+        body: JSON.stringify({ isActive: newStatus, reason: newStatus ? 'ER_REOPENED' : 'TEMPORARY_ER_DIVERSION' }),
       });
       const data = await res.json();
       if (data.success) {
-        setHospital(prev => prev ? ({ ...prev, is_active: newStatus }) : null);
+        setHospital(prev => prev ? { ...prev, is_active: newStatus } : null);
         showToast(
           newStatus
             ? 'Hospital is now OPEN and accepting emergency patients.'
-            : 'Hospital SHUT DOWN. All inbound in-transit ambulances dynamically rerouted!',
+            : 'ER temporarily diverted. Inbound ambulances dynamically rerouted.',
           newStatus ? 'success' : 'error'
         );
       }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
   };
 
-  // Heartbeat refresh
   const triggerHeartbeat = async () => {
     if (!hospital?.id) return;
     try {
       const res = await fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}/heartbeat`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        showToast('Heartbeat signal transmitted. Telemetry freshness 100%!', 'success');
+        showToast('Heartbeat transmitted. Telemetry freshness 100%.', 'success');
         fetchHospitalData();
       }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
   };
 
-  // Single-Click: Accept patient with all requested resources
   const acceptIncident = async (incidentId: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/v1/hospitals/incidents/${incidentId}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hospitalId: hospital?.id })
+        body: JSON.stringify({ hospitalId: hospital?.id }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast(`Patient accepted! All resources confirmed at ER. Inbound ambulance notified.`, 'success');
+        showToast('Patient accepted. Resources confirmed. Inbound ambulance notified.', 'success');
         fetchHospitalData();
       } else {
-        showToast(data.error || 'Could not confirm patient', 'error');
+        showToast(data.error || 'Could not confirm patient.', 'error');
       }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
   };
 
-  // Single-Click: Reject patient and trigger dynamic replan
   const rejectIncident = async (incidentId: string) => {
-    const reason = window.prompt('Reason for declining emergency patient:', 'ER_CAPACITY_OVERLOAD') || 'ER_CAPACITY_OVERLOAD';
+    const reason = window.prompt('Reason for declining:', 'ER_CAPACITY_OVERLOAD') || 'ER_CAPACITY_OVERLOAD';
     try {
       const res = await fetch(`${API_BASE}/api/v1/hospitals/incidents/${incidentId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason, hospitalId: hospital?.id })
+        body: JSON.stringify({ reason, hospitalId: hospital?.id }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast('Patient declined. Dynamic replanning rerouted ambulance to next hospital!', 'info');
+        showToast('Patient declined. Replanning rerouted ambulance to next best hospital.', 'info');
         fetchHospitalData();
       } else {
-        showToast(data.error || 'Could not decline patient', 'error');
+        showToast(data.error || 'Could not decline patient.', 'error');
       }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
   };
 
-  // Single-Click: Patient handover completed (frees ambulance)
   const completeIncidentHandover = async (incidentId: string, vehicleNum?: string | null) => {
     try {
       const res = await fetch(`${API_BASE}/api/v1/hospitals/incidents/${incidentId}/handover`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        showToast(`Patient admitted at ER! Ambulance ${vehicleNum || ''} is now free and back in service.`, 'success');
+        showToast(`Patient admitted. Ambulance ${vehicleNum || ''} freed and back in service.`, 'success');
         fetchHospitalData();
       } else {
-        showToast(data.error || 'Could not complete handover', 'error');
+        showToast(data.error || 'Could not complete handover.', 'error');
       }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
   };
 
-  // Adjust capacity delta
   const adjustCapacity = async (category: string, delta: number) => {
     if (!hospital?.id) return;
     try {
       const res = await fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}/resources/adjust`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, delta })
+        body: JSON.stringify({ category, delta }),
       });
       const data = await res.json();
       if (data.success) {
         showToast(`${category} adjusted by ${delta > 0 ? '+' : ''}${delta}`, 'success');
         fetchHospitalData();
       } else {
-        showToast(data.error || 'Failed to adjust', 'error');
+        showToast(data.error || 'Failed to adjust.', 'error');
       }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
   };
 
-  // Add new resources
   const handleAddResource = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hospital?.id) return;
@@ -340,544 +460,469 @@ export default function HospitalDashboard() {
       const res = await fetch(`${API_BASE}/api/v1/hospitals/${hospital.id}/resources`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: newCategory,
-          count: newCount,
-          isMovable: newIsMovable
-        })
+        body: JSON.stringify({ category: newCategory, count: newCount, isMovable: newIsMovable }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast(`Added ${newCount} units of ${newCategory}!`, 'success');
+        showToast(`Added ${newCount} unit(s) of ${newCategory}.`, 'success');
         setShowAddResource(false);
         fetchHospitalData();
       } else {
-        showToast(data.error || 'Could not add resources', 'error');
+        showToast(data.error || 'Could not add resources.', 'error');
       }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
+    } catch (err: any) { showToast(err.message, 'error'); }
   };
 
-  // Demo hospital presets for quick login
-  const demoAccounts = [
-    { name: 'Dr. D.Y. Patil Medical College', admin_id: 'dy_patil@admin', pass: 'password123' },
-    { name: 'Aditya Birla Memorial Hospital', admin_id: 'aditya_birla@admin', pass: 'password123' },
-    { name: 'YCM Hospital', admin_id: 'ycm@admin', pass: 'password123' },
-    { name: 'Manipal Hospital (Baner)', admin_id: 'manipal@admin', pass: 'password123' },
-    { name: 'Ruby Hall Clinic', admin_id: 'ruby_hall@admin', pass: 'password123' },
-    { name: 'Sassoon General Hospital', admin_id: 'sassoon@admin', pass: 'password123' }
-  ];
+  /* ── Derived ── */
+  const heldRequests = reservations.filter(r => r.status === 'HELD');
+  const confirmedCases = reservations.filter(r => r.status === 'CONFIRMED' || r.status === 'ARRIVED');
 
-  // =========================================================================
-  // VIEW: AUTHENTICATION (LOGIN / REGISTER)
-  // =========================================================================
+  /* ── Triage level styling ── */
+  const triageCls = (level: string) => {
+    if (level === 'RESUSCITATION') return 'RESUSCITATION';
+    if (level === 'EMERGENT') return 'EMERGENT';
+    return 'URGENT';
+  };
+
+  /* ═══════════════════════════════════════════════════
+      AUTH SCREEN
+  ═══════════════════════════════════════════════════ */
   if (!hospital) {
     return (
-      <main className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex justify-center items-center gap-2 mb-2">
-            <span className="w-4 h-4 rounded-full bg-emerald-600 inline-block animate-pulse"></span>
-            <span className="text-xs font-bold tracking-widest text-emerald-700 uppercase">HLTH-02 Core Gateway</span>
-          </div>
-          <h2 className="text-center text-3xl font-extrabold text-slate-900 tracking-tight">
-            Hospital Emergency Terminal
-          </h2>
-          <p className="mt-2 text-center text-sm text-slate-600">
-            Real-time ER Resource Allocation & Patient Handover System
-          </p>
-        </div>
+      <div className="kaze-auth-wrap">
+        <div className="kaze-auth-glow" aria-hidden="true" />
 
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-6 shadow-sm border border-slate-200 rounded-xl sm:px-10">
-            {/* Tabs for Login vs Register */}
-            <div className="flex border-b border-slate-200 mb-6">
-              <button
-                type="button"
-                onClick={() => setAuthMode('LOGIN')}
-                className={`flex-1 py-2 text-sm font-semibold text-center border-b-2 ${
-                  authMode === 'LOGIN'
-                    ? 'border-emerald-600 text-emerald-700'
-                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuthMode('REGISTER')}
-                className={`flex-1 py-2 text-sm font-semibold text-center border-b-2 ${
-                  authMode === 'REGISTER'
-                    ? 'border-emerald-600 text-emerald-700'
-                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Register New Hospital
-              </button>
+        {actionMsg && (
+          <div
+            style={{ position: 'fixed', top: 20, right: 20, zIndex: 300, maxWidth: 380 }}
+            className={`kaze-toast ${actionMsg.type}`}
+            role="alert"
+          >
+            <span>{actionMsg.text}</span>
+            <button className="kaze-toast-close" onClick={() => setActionMsg(null)} aria-label="Dismiss">
+              <IconX size={14} />
+            </button>
+          </div>
+        )}
+
+        <div className="kaze-auth-box">
+          {/* Logo */}
+          <div className="kaze-auth-logo">
+            <div className="kaze-brand-mark">
+              <IconCross size={18} />
             </div>
-
-            {actionMsg && (
-              <div
-                className={`mb-4 p-3 rounded-lg text-sm font-medium ${
-                  actionMsg.type === 'error'
-                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                }`}
-              >
-                {actionMsg.text}
-              </div>
-            )}
-
-            {authMode === 'LOGIN' ? (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Hospital Admin ID
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={loginAdminId}
-                    onChange={e => setLoginAdminId(e.target.value)}
-                    placeholder="e.g. dy_patil@admin"
-                    className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={loginPassword}
-                    onChange={e => setLoginPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full mt-2 py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Authenticating...' : 'Sign In to Hospital Terminal'}
-                </button>
-
-                {/* Quick Demo Pre-sets */}
-                <div className="mt-6 pt-5 border-t border-slate-100">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                    Quick Demo Credentials (Pune Network):
-                  </p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {demoAccounts.map((acc, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => {
-                          setLoginAdminId(acc.admin_id);
-                          setLoginPassword(acc.pass);
-                        }}
-                        className="text-left p-1.5 rounded bg-slate-50 hover:bg-emerald-50 border border-slate-200 text-[11px] text-slate-700 truncate"
-                        title={acc.name}
-                      >
-                        <span className="font-semibold block truncate">{acc.name}</span>
-                        <span className="text-slate-400 font-mono text-[10px]">{acc.admin_id}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={handleRegister} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Hospital Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={regName}
-                    onChange={e => {
-                      setRegName(e.target.value);
-                      if (!regAdminId) {
-                        const slug = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 15);
-                        setRegAdminId(`${slug}@admin`);
-                      }
-                    }}
-                    placeholder="e.g. Sahyadri Speciality Hospital"
-                    className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Hospital Admin ID * (Format: hospital_name@admin)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={regAdminId}
-                    onChange={e => setRegAdminId(e.target.value)}
-                    placeholder="sahyadri@admin"
-                    className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Password *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={regPassword}
-                    onChange={e => setRegPassword(e.target.value)}
-                    placeholder="Create a secure password"
-                    className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                      Latitude
-                    </label>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      required
-                      value={regLat}
-                      onChange={e => setRegLat(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                      Longitude
-                    </label>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      required
-                      value={regLng}
-                      onChange={e => setRegLng(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Contact Phone
-                  </label>
-                  <input
-                    type="text"
-                    value={regPhone}
-                    onChange={e => setRegPhone(e.target.value)}
-                    placeholder="020-XXXXXXXX"
-                    className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <p className="text-[11px] text-slate-500 leading-tight">
-                  ℹ️ Registration automatically provisions 24 standard emergency units (4 ICU beds, 3 ventilators, 2 trauma bays, 6 oxygen beds, 8 general beds).
-                </p>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full mt-2 py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Registering...' : 'Register Hospital & Launch'}
-                </button>
-              </form>
-            )}
+            <div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>KAZE</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'ui-monospace, monospace' }}>HLTH-02 Core Gateway</div>
+            </div>
           </div>
+
+          <h1 className="kaze-auth-title">Hospital ER Terminal</h1>
+          <p className="kaze-auth-sub">
+            Real-time resource allocation, patient triage management, and ambulance handover coordination.
+          </p>
+
+          {/* Auth tabs */}
+          <div className="kaze-auth-tabs" role="tablist">
+            <button
+              className={`kaze-auth-tab ${authMode === 'LOGIN' ? 'active' : ''}`}
+              onClick={() => setAuthMode('LOGIN')}
+              role="tab"
+              aria-selected={authMode === 'LOGIN'}
+            >
+              Sign In
+            </button>
+            <button
+              className={`kaze-auth-tab ${authMode === 'REGISTER' ? 'active' : ''}`}
+              onClick={() => setAuthMode('REGISTER')}
+              role="tab"
+              aria-selected={authMode === 'REGISTER'}
+            >
+              Register Hospital
+            </button>
+          </div>
+
+          {authMode === 'LOGIN' ? (
+            <form onSubmit={handleLogin}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="loginAdminId">Hospital Admin ID</label>
+                <input
+                  id="loginAdminId"
+                  type="text"
+                  required
+                  value={loginAdminId}
+                  onChange={e => setLoginAdminId(e.target.value)}
+                  placeholder="e.g. dy_patil@admin"
+                  className="form-input"
+                  autoComplete="username"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="loginPassword">Password</label>
+                <input
+                  id="loginPassword"
+                  type="password"
+                  required
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="form-input"
+                  autoComplete="current-password"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-accent"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
+                id="login-submit-btn"
+              >
+                {loading ? 'Authenticating...' : 'Sign In to ER Terminal'}
+              </button>
+
+              <hr className="section-divider" />
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                  Quick demo — Pune network
+                </span>
+              </div>
+              <div className="demo-grid">
+                {DEMO_ACCOUNTS.map((acc, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="demo-btn"
+                    onClick={() => { setLoginAdminId(acc.admin_id); setLoginPassword(acc.pass); }}
+                    title={acc.name}
+                  >
+                    <span className="demo-btn-name">{acc.name}</span>
+                    <span className="demo-btn-id">{acc.admin_id}</span>
+                  </button>
+                ))}
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="regName">Hospital Full Name *</label>
+                <input
+                  id="regName" type="text" required value={regName}
+                  onChange={e => {
+                    setRegName(e.target.value);
+                    if (!regAdminId) {
+                      const slug = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 15);
+                      setRegAdminId(`${slug}@admin`);
+                    }
+                  }}
+                  placeholder="e.g. Sahyadri Speciality Hospital"
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="regAdminId">Admin ID * (hospital_name@admin)</label>
+                <input
+                  id="regAdminId" type="text" required value={regAdminId}
+                  onChange={e => setRegAdminId(e.target.value)}
+                  placeholder="sahyadri@admin"
+                  className="form-input"
+                  style={{ fontFamily: 'ui-monospace, monospace' }}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="regPassword">Password *</label>
+                <input
+                  id="regPassword" type="password" required value={regPassword}
+                  onChange={e => setRegPassword(e.target.value)}
+                  placeholder="Create a secure password"
+                  className="form-input"
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" htmlFor="regLat">Latitude</label>
+                  <input
+                    id="regLat" type="number" step="0.0001" required value={regLat}
+                    onChange={e => setRegLat(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" htmlFor="regLng">Longitude</label>
+                  <input
+                    id="regLng" type="number" step="0.0001" required value={regLng}
+                    onChange={e => setRegLng(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="regPhone">Contact Phone</label>
+                <input
+                  id="regPhone" type="text" value={regPhone}
+                  onChange={e => setRegPhone(e.target.value)}
+                  placeholder="020-XXXXXXXX"
+                  className="form-input"
+                />
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 16 }}>
+                Registration provisions 24 default emergency units: 4 ICU beds, 3 ventilators, 2 trauma bays, 6 oxygen beds, 1 pediatric ICU, 8 general beds.
+              </p>
+              <button
+                type="submit" disabled={loading}
+                className="btn btn-accent"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
+                id="register-submit-btn"
+              >
+                {loading ? 'Registering...' : 'Register Hospital & Launch'}
+              </button>
+            </form>
+          )}
         </div>
-      </main>
+      </div>
     );
   }
 
-  // Incoming Held Requests
-  const heldRequests = reservations.filter(r => r.status === 'HELD');
-  // In-transit / Confirmed Cases
-  const confirmedCases = reservations.filter(r => r.status === 'CONFIRMED' || r.status === 'ARRIVED');
-
-  // =========================================================================
-  // VIEW: HOSPITAL DASHBOARD MAIN
-  // =========================================================================
+  /* ═══════════════════════════════════════════════════
+      MAIN DASHBOARD
+  ═══════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
-      {/* Top Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Left: Branding & Hospital Identity */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-black text-xl shadow-xs">
-                +
+    <div className="kaze-app">
+      {/* ── Header ── */}
+      <header className="kaze-header" role="banner">
+        <div className="kaze-header-inner">
+          <div className="kaze-header-row">
+            {/* Brand + hospital identity */}
+            <div className="kaze-brand">
+              <div className="kaze-brand-mark" aria-hidden="true">
+                <IconCross size={18} />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-bold text-slate-900 tracking-tight">{hospital.name}</h1>
-                  {hospital.is_active ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5 animate-pulse"></span>
-                      OPEN / RECEIVING
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-600 mr-1.5"></span>
-                      SHUT DOWN / DIVERTED
-                    </span>
-                  )}
+              <div className="kaze-brand-info">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="kaze-brand-name">{hospital.name}</span>
+                  <span className={`kaze-status-pill ${hospital.is_active ? 'open' : 'closed'}`}>
+                    <span className={`kaze-status-dot ${hospital.is_active ? 'pulse' : ''}`} aria-hidden="true" />
+                    {hospital.is_active ? 'Open / Receiving' : 'Diverted'}
+                  </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-500 font-mono mt-0.5">
-                  <span>ID: {hospital.admin_id}</span>
-                  <span>•</span>
-                  <span>GPS: {hospital.latitude.toFixed(4)}, {hospital.longitude.toFixed(4)}</span>
-                  <span>•</span>
-                  <span>Tel: {hospital.contact_phone || '020-30717500'}</span>
+                <div className="kaze-header-meta">
+                  <span>{hospital.admin_id}</span>
+                  <span className="kaze-meta-sep">|</span>
+                  <span>GPS {hospital.latitude.toFixed(4)}, {hospital.longitude.toFixed(4)}</span>
+                  <span className="kaze-meta-sep">|</span>
+                  <span>{hospital.contact_phone || '—'}</span>
                 </div>
               </div>
             </div>
 
-            {/* Right: Hospital Controls (Active Toggle, Heartbeat, Logout) */}
-            <div className="flex items-center gap-2.5">
-              {/* Active/Inactive Toggle Button */}
+            {/* Actions */}
+            <div className="kaze-header-actions">
               <button
                 type="button"
                 onClick={toggleHospitalStatus}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors border ${
-                  hospital.is_active
-                    ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                }`}
-                title="Toggle hospital status between open and temporarily diverted"
+                className={`btn ${hospital.is_active ? 'btn-danger' : 'btn-accent'}`}
+                title="Toggle hospital status"
+                id="toggle-status-btn"
               >
-                {hospital.is_active ? '⏸️ Temporarily Divert ER' : '▶️ Re-open Hospital'}
+                {hospital.is_active ? 'Divert ER' : 'Re-open ER'}
               </button>
-
-              {/* Heartbeat Refresh */}
               <button
                 type="button"
                 onClick={triggerHeartbeat}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 transition-colors"
-                title="Refresh timestamp to keep hospital freshness score 100%"
+                className="btn btn-ghost"
+                title="Refresh telemetry heartbeat"
+                id="heartbeat-btn"
               >
-                📡 Heartbeat
+                <IconSatellite size={14} />
+                Heartbeat
               </button>
-
-              {/* Logout */}
               <button
                 type="button"
                 onClick={handleLogout}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                className="btn btn-ghost"
+                title="Sign out"
+                id="logout-btn"
               >
+                <IconLogout size={14} />
                 Sign Out
               </button>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex space-x-8 border-t border-slate-100 -mb-px">
+          {/* Tabs */}
+          <nav className="kaze-tabs" aria-label="Dashboard sections">
             <button
+              className={`kaze-tab ${activeTab === 'REQUESTS' ? 'active' : ''}`}
               onClick={() => setActiveTab('REQUESTS')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-                activeTab === 'REQUESTS'
-                  ? 'border-emerald-600 text-emerald-700 font-bold'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
+              aria-current={activeTab === 'REQUESTS' ? 'page' : undefined}
+              id="tab-requests"
             >
-              <span>📥 Incoming Requests</span>
+              <IconPulse size={14} />
+              Incoming Requests
               {heldRequests.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-rose-600 text-white animate-pulse">
-                  {heldRequests.length}
-                </span>
+                <span className="kaze-badge" aria-label={`${heldRequests.length} pending`}>{heldRequests.length}</span>
               )}
             </button>
-
             <button
+              className={`kaze-tab ${activeTab === 'RESOURCES' ? 'active' : ''}`}
               onClick={() => setActiveTab('RESOURCES')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-                activeTab === 'RESOURCES'
-                  ? 'border-emerald-600 text-emerald-700 font-bold'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
+              aria-current={activeTab === 'RESOURCES' ? 'page' : undefined}
+              id="tab-resources"
             >
-              <span>🛏️ Resource Read / Update</span>
-              <span className="text-xs text-slate-400 font-normal">
+              <IconBed size={14} />
+              Resource Inventory
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                 ({resourceUnits.filter(u => u.status === 'FREE').length} free)
               </span>
             </button>
-
             <button
+              className={`kaze-tab ${activeTab === 'HANDOVER' ? 'active' : ''}`}
               onClick={() => setActiveTab('HANDOVER')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-                activeTab === 'HANDOVER'
-                  ? 'border-emerald-600 text-emerald-700 font-bold'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
+              aria-current={activeTab === 'HANDOVER' ? 'page' : undefined}
+              id="tab-handover"
             >
-              <span>🚑 Patient Arrival & Handover</span>
+              <IconHospital size={14} />
+              Patient Arrival & Handover
               {confirmedCases.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white">
-                  {confirmedCases.length}
-                </span>
+                <span className="kaze-badge amber">{confirmedCases.length}</span>
               )}
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 
-      {/* Toast notifications */}
+      {/* Toast */}
       {actionMsg && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-          <div
-            className={`p-3.5 rounded-lg text-sm font-medium shadow-xs flex justify-between items-center ${
-              actionMsg.type === 'error'
-                ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                : actionMsg.type === 'success'
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-sky-50 text-sky-700 border border-sky-200'
-            }`}
-          >
+        <div className="kaze-toast-wrap" role="alert" aria-live="polite">
+          <div className={`kaze-toast ${actionMsg.type}`}>
             <span>{actionMsg.text}</span>
-            <button onClick={() => setActionMsg(null)} className="text-xs font-bold opacity-60 hover:opacity-100">
-              ✕
+            <button className="kaze-toast-close" onClick={() => setActionMsg(null)} aria-label="Dismiss notification">
+              <IconX size={14} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
-        {/* ================================================================= */}
-        {/* TAB 1: INCOMING REQUESTS                                          */}
-        {/* ================================================================= */}
+      {/* ── Main Content ── */}
+      <main className="kaze-main" id="main-content">
+
+        {/* ═══ TAB 1: INCOMING REQUESTS ═══ */}
         {activeTab === 'REQUESTS' && (
-          <section className="space-y-4">
-            <div className="flex justify-between items-center">
+          <section aria-labelledby="requests-heading">
+            <div className="kaze-section-header">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Emergency Dispatch Requests</h2>
-                <p className="text-xs text-slate-500">
+                <h2 className="kaze-section-title" id="requests-heading">Emergency Dispatch Requests</h2>
+                <p className="kaze-section-sub">
                   Review and accept or decline real-time resource reservation holds.
                 </p>
               </div>
-              <span className="text-xs bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-mono">
-                Auto-refreshing every 3.5s
+              <span style={{
+                fontSize: '0.68rem', fontFamily: 'ui-monospace, monospace',
+                color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)',
+                border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '4px 10px',
+              }}>
+                Auto-refreshing every 3.5 s
               </span>
             </div>
 
             {heldRequests.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-xs">
-                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-xl mb-3">
-                  ✓
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <IconCheck size={22} />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-900">No Pending Emergency Requests</h3>
-                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                <h3 className="empty-title">No Pending Emergency Requests</h3>
+                <p className="empty-sub">
                   When a dispatcher or citizen triggers an SOS requiring your hospital's resources, it will appear here instantly.
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {heldRequests.map(req => {
                   const expires = new Date(req.hold_expires_at).toLocaleTimeString();
                   return (
-                    <div
-                      key={req.id}
-                      className="bg-white border-2 border-emerald-500 rounded-xl p-5 shadow-sm transition-all hover:shadow-md"
-                    >
-                      <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${
-                              req.triage_level === 'RESUSCITATION'
-                                ? 'bg-rose-100 text-rose-800'
-                                : req.triage_level === 'EMERGENT'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-blue-100 text-blue-800'
-                            }`}
-                          >
+                    <article key={req.id} className="request-card" aria-label={`Incoming request triage: ${req.triage_level}`}>
+                      {/* Card header */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span className={`triage-badge ${triageCls(req.triage_level)}`}>
                             {req.triage_level}
                           </span>
-                          <span className="text-xs font-mono font-semibold text-slate-500">
-                            Incident #{req.incident_id.slice(0, 8)}
+                          <span style={{ fontSize: '0.72rem', fontFamily: 'ui-monospace, monospace', color: 'var(--text-muted)' }}>
+                            INC #{req.incident_id.slice(0, 8).toUpperCase()}
                           </span>
                         </div>
-                        <div className="text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
-                          Hold Expires at {expires}
+                        <div style={{
+                          fontSize: '0.72rem', fontWeight: 700, color: '#f87171',
+                          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)',
+                          borderRadius: 'var(--r-sm)', padding: '4px 10px',
+                        }}>
+                          Hold expires {expires}
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-3 text-sm">
-                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                          <span className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
+                      {/* Info cells */}
+                      <div className="info-grid-3">
+                        <div className="info-cell">
+                          <span className="info-cell-label">
                             Requested Units ({req.units?.length || 1})
                           </span>
-                          <div className="flex flex-wrap gap-1.5 mt-1">
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 6 }}>
                             {req.units && req.units.length > 0 ? (
                               req.units.map((u, ui) => (
-                                <span
-                                  key={ui}
-                                  className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800"
-                                >
-                                  🛏️ {u.category.replace(/_/g, ' ')} ({u.unit_label})
+                                <span key={ui} className="unit-pill">
+                                  {u.category.replace(/_/g, ' ')} — {u.unit_label}
                                 </span>
                               ))
                             ) : (
-                              <span className="text-xs font-bold text-slate-900">
+                              <span className="unit-pill">
                                 {req.unit_category?.replace(/_/g, ' ')} ({req.unit_label})
                               </span>
                             )}
                           </div>
                         </div>
-
-                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                          <span className="text-[11px] font-bold text-slate-500 uppercase block">Inbound Transport</span>
-                          <span className="text-base font-bold text-slate-900 block mt-0.5">
-                            {req.vehicle_number || 'Auto-Allocated 108 Fleet'}
-                          </span>
+                        <div className="info-cell">
+                          <span className="info-cell-label">Inbound Transport</span>
+                          <span className="info-cell-value">{req.vehicle_number || '108 Auto-Fleet'}</span>
                           {req.driver_phone && (
-                            <span className="text-xs text-slate-600 block">📞 {req.driver_phone}</span>
+                            <span className="info-cell-sub">{req.driver_phone}</span>
                           )}
                         </div>
-
-                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                          <span className="text-[11px] font-bold text-slate-500 uppercase block">Patient Coordinates</span>
-                          <span className="text-xs font-mono font-bold text-slate-800 block mt-1">
+                        <div className="info-cell">
+                          <span className="info-cell-label">Patient Coordinates</span>
+                          <span className="info-cell-value" style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.78rem' }}>
                             {req.inc_lat?.toFixed(4)}, {req.inc_lng?.toFixed(4)}
                           </span>
-                          <span className="text-xs text-slate-500">Estimated Transit: ~7-12 min</span>
+                          <span className="info-cell-sub">Est. transit ~7-12 min</span>
                         </div>
                       </div>
 
-                      <div className="bg-amber-50/60 p-3 rounded-lg border border-amber-200/60 text-xs text-slate-800 mb-4">
-                        <span className="font-bold text-amber-900 block mb-0.5">Triage Clinical Description:</span>
-                        &quot;{req.description_raw || 'Emergency SOS trigger without description.'}&quot;
+                      {/* Triage description */}
+                      <div className="triage-desc">
+                        <strong>Clinical Triage: </strong>
+                        &ldquo;{req.description_raw || 'Emergency SOS — no description provided.'}&rdquo;
                       </div>
 
-                      {/* Action Buttons: Single Click for the entire patient */}
-                      <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                      {/* Actions */}
+                      <div className="action-row">
                         <button
                           type="button"
                           onClick={() => rejectIncident(req.incident_id)}
-                          className="px-4 py-2 rounded-lg text-xs font-bold text-rose-700 bg-white border border-rose-300 hover:bg-rose-50 transition-colors"
+                          className="btn btn-danger"
+                          id={`reject-btn-${req.incident_id.slice(0, 8)}`}
                         >
-                          ✕ Reject & Replan Patient
+                          <IconX size={13} />
+                          Decline & Replan
                         </button>
                         <button
                           type="button"
                           onClick={() => acceptIncident(req.incident_id)}
-                          className="px-5 py-2 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-colors flex items-center gap-1.5"
+                          className="btn btn-accent"
+                          id={`accept-btn-${req.incident_id.slice(0, 8)}`}
                         >
-                          <span>✓ Accept Patient ({req.units?.length || 1} Resources)</span>
+                          <IconCheck size={13} />
+                          Accept Patient ({req.units?.length || 1} resource{(req.units?.length || 1) !== 1 ? 's' : ''})
                         </button>
                       </div>
-                    </div>
+                    </article>
                   );
                 })}
               </div>
@@ -885,101 +930,92 @@ export default function HospitalDashboard() {
           </section>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB 2: RESOURCE READ / UPDATE                                     */}
-        {/* ================================================================= */}
+        {/* ═══ TAB 2: RESOURCE INVENTORY ═══ */}
         {activeTab === 'RESOURCES' && (
-          <section className="space-y-6">
-            <div className="flex flex-wrap justify-between items-center gap-3">
+          <section aria-labelledby="resources-heading">
+            <div className="kaze-section-header">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Hospital Resource Inventory</h2>
-                <p className="text-xs text-slate-500">
-                  Read live availability, increment or decrement available capacity, and provision new physical units.
+                <h2 className="kaze-section-title" id="resources-heading">Hospital Resource Inventory</h2>
+                <p className="kaze-section-sub">
+                  Live availability, capacity adjustment, and discrete unit provisioning.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddResource(true)}
-                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-colors"
+                className="btn btn-accent"
+                id="add-resource-btn"
               >
-                + Add New Equipment
+                <IconPlus size={13} />
+                Add Equipment
               </button>
             </div>
 
-            {/* Aggregated Capacity Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { key: 'ICU_BED', label: 'ICU Beds', icon: '🛏️', desc: 'Critical Care Monitoring' },
-                { key: 'VENTILATOR', label: 'Ventilators', icon: '🫁', desc: 'Invasive/Non-invasive Respiration' },
-                { key: 'TRAUMA_BAY', label: 'Trauma Bays', icon: '🚨', desc: 'High-acuity Resuscitation' },
-                { key: 'OXYGEN_BED', label: 'Oxygen Beds', icon: '💨', desc: 'High-flow O2 Support' },
-                { key: 'PEDIATRIC_ICU', label: 'Pediatric ICU', icon: '👶', desc: 'Neonatal & Child Intensive Care' },
-                { key: 'GENERAL_BED', label: 'General Ward Beds', icon: '🏥', desc: 'Acute Clinical Observation' }
-              ].map(cat => {
+            {/* Aggregated capacity cards */}
+            <div className="resource-grid" style={{ marginBottom: 24 }}>
+              {RESOURCE_CATS.map(cat => {
                 const units = resourceUnits.filter(u => u.category === cat.key);
                 const freeCount = units.filter(u => u.status === 'FREE').length;
                 const totalCount = units.length;
                 const occupiedCount = units.filter(u => u.status === 'OCCUPIED' || u.status === 'HELD').length;
+                const pct = totalCount > 0 ? (freeCount / totalCount) * 100 : 0;
+                const CatIcon = cat.Icon;
 
                 return (
-                  <div
-                    key={cat.key}
-                    className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{cat.icon}</span>
-                          <div>
-                            <h3 className="text-sm font-bold text-slate-900">{cat.label}</h3>
-                            <span className="text-[11px] text-slate-400 block">{cat.desc}</span>
-                          </div>
-                        </div>
-                        <span className="text-xs font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold">
-                          {cat.key}
-                        </span>
+                  <div key={cat.key} className="resource-card">
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div className="resource-icon-wrap">
+                        <CatIcon size={18} />
                       </div>
-
-                      <div className="mt-4 flex items-baseline justify-between">
-                        <div>
-                          <span className="text-3xl font-extrabold text-slate-900">{freeCount}</span>
-                          <span className="text-xs text-slate-400 ml-1">/ {totalCount} free</span>
-                        </div>
-                        <div className="text-right text-[11px] text-slate-500">
-                          <span className="text-amber-700 font-semibold">{occupiedCount} occupied</span>
-                        </div>
-                      </div>
-
-                      {/* Capacity progress bar */}
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-2">
-                        <div
-                          className="bg-emerald-500 h-full transition-all"
-                          style={{ width: `${totalCount > 0 ? (freeCount / totalCount) * 100 : 0}%` }}
-                        />
-                      </div>
+                      <span style={{
+                        fontSize: '0.6rem', fontFamily: 'ui-monospace, monospace', fontWeight: 700,
+                        color: 'var(--text-dim)', letterSpacing: '0.06em',
+                        background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
+                        borderRadius: 'var(--r-sm)', padding: '2px 6px',
+                      }}>
+                        {cat.key}
+                      </span>
                     </div>
 
-                    {/* Quick Delta +/- Buttons */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-600">Quick Adjust:</span>
-                      <div className="flex items-center gap-1.5">
+                    <div>
+                      <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>
+                        {cat.label}
+                      </h3>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{cat.desc}</p>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 14 }}>
+                      <div>
+                        <span className="resource-count">{freeCount}</span>
+                        <span className="resource-count-sub">/ {totalCount} free</span>
+                      </div>
+                      <span className="resource-occupied">{occupiedCount} occupied</span>
+                    </div>
+
+                    <div className="cap-bar-track">
+                      <div className="cap-bar-fill" style={{ width: `${pct}%` }} />
+                    </div>
+
+                    <div className="adj-row">
+                      <span className="adj-label">Quick adjust</span>
+                      <div className="adj-controls">
                         <button
                           type="button"
+                          className="adj-btn"
                           onClick={() => adjustCapacity(cat.key, -1)}
                           disabled={freeCount <= 0}
-                          className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold flex items-center justify-center disabled:opacity-30 transition-colors"
-                          title="Reduce available unit (-1 Maintenance)"
+                          aria-label={`Decrease ${cat.label}`}
+                          title="Mark one unit as in maintenance"
                         >
-                          -
+                          −
                         </button>
-                        <span className="text-xs font-mono font-bold text-slate-600 w-6 text-center">
-                          {freeCount}
-                        </span>
+                        <span className="adj-count">{freeCount}</span>
                         <button
                           type="button"
+                          className="adj-btn"
                           onClick={() => adjustCapacity(cat.key, 1)}
-                          className="w-7 h-7 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold flex items-center justify-center transition-colors"
-                          title="Free up or add unit (+1 Free)"
+                          aria-label={`Increase ${cat.label}`}
+                          title="Free up or add one unit"
                         >
                           +
                         </button>
@@ -990,45 +1026,35 @@ export default function HospitalDashboard() {
               })}
             </div>
 
-            {/* Discrete Inventory List */}
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-              <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                <h3 className="text-sm font-bold text-slate-900">Discrete Physical Units ({resourceUnits.length})</h3>
-                <span className="text-xs text-slate-500">Atomic Resource State Tracking</span>
+            {/* Discrete unit table */}
+            <div className="kaze-table-wrap">
+              <div className="kaze-table-header">
+                <span className="kaze-table-title">Discrete Physical Units ({resourceUnits.length})</span>
+                <span className="kaze-table-hint">Atomic resource state tracking</span>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+              <div style={{ overflowX: 'auto' }}>
+                <table className="kaze-table" aria-label="Resource units inventory">
+                  <thead>
                     <tr>
-                      <th className="py-2.5 px-4">Unit Label</th>
-                      <th className="py-2.5 px-4">Category</th>
-                      <th className="py-2.5 px-4">Status</th>
-                      <th className="py-2.5 px-4">Movable</th>
-                      <th className="py-2.5 px-4">Last Updated</th>
+                      <th scope="col">Unit Label</th>
+                      <th scope="col">Category</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Movable</th>
+                      <th scope="col">Last Updated</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody>
                     {resourceUnits.map(unit => (
-                      <tr key={unit.id} className="hover:bg-slate-50/50">
-                        <td className="py-2.5 px-4 font-mono font-bold text-slate-900">{unit.unit_label}</td>
-                        <td className="py-2.5 px-4 text-slate-600">{unit.category}</td>
-                        <td className="py-2.5 px-4">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                              unit.status === 'FREE'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : unit.status === 'OCCUPIED'
-                                ? 'bg-amber-100 text-amber-800'
-                                : unit.status === 'HELD'
-                                ? 'bg-blue-100 text-blue-800 animate-pulse'
-                                : 'bg-slate-200 text-slate-700'
-                            }`}
-                          >
-                            {unit.status}
-                          </span>
+                      <tr key={unit.id}>
+                        <td className="mono">{unit.unit_label}</td>
+                        <td>{unit.category.replace(/_/g, ' ')}</td>
+                        <td>
+                          <span className={`chip ${unit.status}`}>{unit.status}</span>
                         </td>
-                        <td className="py-2.5 px-4 text-slate-500">{unit.is_movable ? 'Yes (Movable)' : 'No (Fixed)'}</td>
-                        <td className="py-2.5 px-4 text-slate-400 font-mono text-[11px]">
+                        <td style={{ color: unit.is_movable ? 'var(--accent)' : 'var(--text-muted)' }}>
+                          {unit.is_movable ? 'Movable' : 'Fixed'}
+                        </td>
+                        <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                           {new Date(unit.updated_at).toLocaleTimeString()}
                         </td>
                       </tr>
@@ -1038,22 +1064,22 @@ export default function HospitalDashboard() {
               </div>
             </div>
 
-            {/* Modal: Add New Equipment */}
+            {/* Add Resource Modal */}
             {showAddResource && (
-              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200">
-                  <h3 className="text-base font-bold text-slate-900 mb-1">Add Equipment to Hospital</h3>
-                  <p className="text-xs text-slate-500 mb-4">
+              <div className="kaze-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+                <div className="kaze-modal">
+                  <h3 className="kaze-modal-title" id="modal-title">Add Equipment to Hospital</h3>
+                  <p className="kaze-modal-sub">
                     Creates discrete physical tracking identifiers for new hospital assets.
                   </p>
-
-                  <form onSubmit={handleAddResource} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase">Category</label>
+                  <form onSubmit={handleAddResource}>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="modal-category">Category</label>
                       <select
+                        id="modal-category"
                         value={newCategory}
                         onChange={e => setNewCategory(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="form-select"
                       >
                         <option value="ICU_BED">ICU Bed</option>
                         <option value="VENTILATOR">Ventilator</option>
@@ -1063,44 +1089,38 @@ export default function HospitalDashboard() {
                         <option value="GENERAL_BED">General Ward Bed</option>
                       </select>
                     </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase">Quantity to Add</label>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="modal-count">Quantity to Add</label>
                       <input
+                        id="modal-count"
                         type="number"
-                        min="1"
-                        max="20"
+                        min="1" max="20"
                         value={newCount}
                         onChange={e => setNewCount(parseInt(e.target.value, 10) || 1)}
-                        className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="form-input"
                       />
                     </div>
-
-                    <div className="flex items-center gap-2">
+                    <div className="form-checkbox-row" style={{ marginBottom: 16 }}>
                       <input
                         type="checkbox"
-                        id="movableCheck"
+                        id="modal-movable"
                         checked={newIsMovable}
                         onChange={e => setNewIsMovable(e.target.checked)}
-                        className="rounded text-emerald-600 focus:ring-emerald-500"
                       />
-                      <label htmlFor="movableCheck" className="text-xs text-slate-700">
-                        Is movable equipment (e.g. portable ventilator)
+                      <label htmlFor="modal-movable" className="form-checkbox-label">
+                        Movable equipment (e.g. portable ventilator)
                       </label>
                     </div>
-
-                    <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <div className="kaze-modal-footer">
                       <button
                         type="button"
                         onClick={() => setShowAddResource(false)}
-                        className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                        className="btn btn-ghost"
+                        id="modal-cancel-btn"
                       >
                         Cancel
                       </button>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
-                      >
+                      <button type="submit" className="btn btn-accent" id="modal-confirm-btn">
                         Confirm & Provision
                       </button>
                     </div>
@@ -1111,80 +1131,83 @@ export default function HospitalDashboard() {
           </section>
         )}
 
-        {/* ================================================================= */}
-        {/* TAB 3: APPROVED PATIENTS & HANDOVER                               */}
-        {/* ================================================================= */}
+        {/* ═══ TAB 3: PATIENT ARRIVAL & HANDOVER ═══ */}
         {activeTab === 'HANDOVER' && (
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Patient Arrival & Handover Station</h2>
-              <p className="text-xs text-slate-500">
-                When an ambulance arrives at the emergency bay, click &quot;Patient Arrived & Complete Handover&quot; to admit the patient and free the ambulance for new dispatches.
-              </p>
+          <section aria-labelledby="handover-heading">
+            <div className="kaze-section-header">
+              <div>
+                <h2 className="kaze-section-title" id="handover-heading">Patient Arrival & Handover Station</h2>
+                <p className="kaze-section-sub">
+                  When an ambulance arrives, complete the handover to admit the patient and release the vehicle for new dispatches.
+                </p>
+              </div>
             </div>
 
             {confirmedCases.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-xs">
-                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-xl mb-3">
-                  🚑
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <IconHospital size={22} />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-900">No In-Transit Ambulances En Route</h3>
-                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                <h3 className="empty-title">No In-Transit Ambulances</h3>
+                <p className="empty-sub">
                   Accepted reservations and active inbound patients will appear here awaiting ER admission.
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {confirmedCases.map(c => (
-                  <div
-                    key={c.id}
-                    className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 uppercase">
-                          {c.status}
-                        </span>
-                        <span className="text-xs font-bold text-slate-900 font-mono">
-                          Ambulance: {c.vehicle_number || '108-EM-UNIT'}
+                  <article key={c.id} className="handover-card" aria-label={`Inbound patient case ${c.incident_id.slice(0, 8)}`}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <span className={`status-tag ${c.status}`}>{c.status}</span>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'ui-monospace, monospace', color: 'var(--text-primary)' }}>
+                          {c.vehicle_number || '108 EM UNIT'}
                         </span>
                         {c.driver_phone && (
-                          <span className="text-xs text-emerald-700 font-semibold">📞 {c.driver_phone}</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600 }}>
+                            {c.driver_phone}
+                          </span>
+                        )}
+                        <span className="live-dot" aria-label="Live tracking" />
+                      </div>
+
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+                        Incident #{c.incident_id.slice(0, 8).toUpperCase()}
+                      </p>
+
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
+                        {c.units && c.units.length > 0 ? (
+                          c.units.map((u, ui) => (
+                            <span key={ui} className="unit-pill">
+                              {u.category.replace(/_/g, ' ')} — {u.unit_label}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="unit-pill">
+                            {c.unit_category?.replace(/_/g, ' ') || 'Reserved Resource'} ({c.unit_label || 'Unit'})
+                          </span>
                         )}
                       </div>
 
-                      <div className="text-xs text-slate-600 font-medium">
-                        <span>Patient Incident #{c.incident_id.slice(0, 8)}</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {c.units && c.units.length > 0 ? (
-                            c.units.map((u, ui) => (
-                              <span key={ui} className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-800">
-                                🛏️ {u.category.replace(/_/g, ' ')} ({u.unit_label})
-                              </span>
-                            ))
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-800">
-                              🛏️ {c.unit_category?.replace(/_/g, ' ') || 'Reserved Resource'} ({c.unit_label || 'Unit'})
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-slate-500 italic max-w-xl">
-                        &quot;{c.description_raw || 'Emergency transfer'}&quot;
-                      </p>
+                      {c.description_raw && (
+                        <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.6 }}>
+                          &ldquo;{c.description_raw}&rdquo;
+                        </p>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div style={{ flexShrink: 0 }}>
                       <button
                         type="button"
                         onClick={() => completeIncidentHandover(c.incident_id, c.vehicle_number)}
-                        className="px-5 py-2.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors flex items-center gap-2"
+                        className="btn btn-accent"
+                        id={`handover-btn-${c.incident_id.slice(0, 8)}`}
                       >
-                        <span>✓ Patient Arrived & Free Ambulance</span>
+                        <IconCheck size={14} />
+                        Patient Arrived — Free Ambulance
                       </button>
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
             )}

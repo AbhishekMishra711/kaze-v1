@@ -46,13 +46,15 @@ export default function Footer() {
             </h3>
             <ul className="space-y-3">
               <li>
-                <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-300 hover:text-white transition-colors block">
-                  🏥 Hospital ER Portal
+                <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span>Hospital ER Portal</span>
                 </a>
               </li>
               <li>
-                <a href="http://localhost:3002" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-300 hover:text-white transition-colors block">
-                  🚑 Ambulance Live Console
+                <a href="http://localhost:3002" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                  <span>Ambulance Live Console</span>
                 </a>
               </li>
               <li>
